@@ -1,0 +1,15 @@
+[package]
+name = "examples"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+
+[dependencies]
+bcore = { path = "../core" }
+
+
+[[example]]
+name = "rust"
+path = "example_rust.rs"

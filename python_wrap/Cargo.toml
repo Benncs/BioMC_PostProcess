@@ -1,0 +1,21 @@
+[package]
+name = "python_wrap"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+
+[package.metadata.maturin]
+bindings = "pyo3"
+
+[dependencies]
+bcore = { path = "../core" }
+numpy = "0.23.0"
+pyo3 = { version = "0.23.1", features = ["extension-module"] }
+
+
+[lib]
+name = "biomc_pp"
+path = "src/lib.rs"
+crate-type = ["cdylib"]

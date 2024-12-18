@@ -1,0 +1,26 @@
+[workspace]
+members = [
+    "core",
+    "python_wrap",
+    "examples"
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Benjamin Casale"]
+description = "A short description of mfy package"
+documentation = "https://example.com/bar"
+
+
+[profile.release]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = true
+panic = 'unwind'
+incremental = false
+codegen-units = 16
+rpath = false

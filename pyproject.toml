@@ -1,0 +1,43 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "biomc_pp"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+dynamic = ["version"]
+dependencies = [
+    "numpy>=2.2.0",
+]
+
+
+
+[project.scripts]
+main = "biomc_pp:main"
+
+[tool.maturin]
+# Build artifacts with the specified Cargo profile
+profile = "release"
+# List of features to activate
+features = ["pyo3/extension-module"]
+# Activate all available features
+all-features = false
+# Do not activate the `default` feature
+no-default-features = false
+# Cargo manifest path
+manifest-path = "python_wrap/Cargo.toml"
+# Require Cargo.lock and cache are up to date
+frozen = false
+# Require Cargo.lock is up to date
+locked = false
+# Override a configuration value (unstable)
+config = []
+# Unstable (nightly-only) flags to Cargo, see 'cargo -Z help' for details
+unstable-flags = []
+# Extra arguments that will be passed to rustc as `cargo rustc [...] -- [...] [arg1] [arg2]`
+rustc-args = []

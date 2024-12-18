@@ -1,0 +1,16 @@
+[package]
+name = "bcore"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+
+[dependencies]
+hdf5 = "0.8.1"
+ndarray = "0.16.1"
+
+
+[lib]
+name = "bcore"
+path = "src/lib.rs"
