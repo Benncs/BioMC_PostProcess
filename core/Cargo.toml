@@ -9,7 +9,7 @@ documentation.workspace = true
 [dependencies]
 hdf5 = "0.8.1"
 ndarray = "0.16.1"
-
+hdf5-sys = { version = "0.8.1", features = ["static"] }
 
 [lib]
 name = "bcore"
