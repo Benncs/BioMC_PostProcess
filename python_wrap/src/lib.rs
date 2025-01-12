@@ -53,6 +53,12 @@ impl PythonPostProcess {
         Ok(self.inner.time())
     }
 
+    #[getter]
+    fn n_export(&self)->PyResult<usize>
+    {
+        Ok(self.inner.n_export())
+    }
+
     fn get_spatial_average_concentration(&self,py: Python<'_>, species: usize, phase: Phase) -> Py<PyArray1<f64>> {
         let e = self.inner.get_spatial_average_concentration(species,convert_phase(phase));
         
@@ -105,6 +111,25 @@ impl PythonPostProcess {
     fn get_rtd(&self, flow: f64, step: f64, is_str: Option<bool>) -> PyResult<PyObject> {
         // Placeholder signature
         Python::with_gil(|py| Ok(py.None()))
+    }
+
+    fn get_properties(&self,py: Python<'_>,key:&str,i_export:usize) -> Py<PyArray1<f64>> {
+
+        let e = self.inner.get_properties(key,i_export);
+        
+        return PyArray1::from_owned_array(py, e).unbind();
+    }
+
+    fn get_population_mean(&self,key:&str,i_export:usize)-> PyResult<f64>
+    {
+        Ok(self.inner.get_population_mean(key, i_export)    )
+    }
+
+    fn get_time_population_mean(&self,py: Python<'_>,key:&str)->Py<PyArray1<f64>>
+    {
+        let e = self.inner.get_time_population_mean(key);
+        
+        return PyArray1::from_owned_array(py, e).unbind();
     }
 }
 

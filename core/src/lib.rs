@@ -2,7 +2,7 @@ mod datamodel;
 mod process;
 
 
-use datamodel::{vec_to_array_view2, vec_to_array_view3, Dim, MainResult, Results};
+use datamodel::{read_avg_model_properties, read_model_properties, vec_to_array_view2, vec_to_array_view3, Dim, MainResult, Results};
 use ndarray::{s, Array1, Array2, Axis};
 use process::spatial_average_concentration;
 
@@ -31,7 +31,7 @@ impl PostProcess
         let main = Results::new(&result_path,&_root,folder);
         if main.is_none()
         {
-            panic!("todo")
+            return Err(())
         }
 
         Ok(Self {
@@ -140,5 +140,50 @@ impl PostProcess
     pub fn get_number_particle<'py>(&self) -> &Array2<f64> {
         &self.results.2
     }
+
+    pub fn get_properties(&self,key:&str,i_export:usize)-> Array1<f64>
+    {
+        if i_export >=self.results.0.records.time.len()
+        {
+            panic!("Out of range");
+        }
+
+        if let Ok(res) = read_model_properties(key,&self.results.1,i_export)
+        {
+            return res;
+        }
+        panic!("ALLO");
+
+    }
+
+    pub fn get_time_population_mean(&self,key:&str)-> Array1<f64>
+    {
+        if let Ok(mean) = read_avg_model_properties(key,&self.results.1,self.n_export())
+        {
+            return mean;
+        }
+        panic!("ALLO");
+    }
+
+
+    pub fn get_population_mean(&self,key:&str,i_export:usize)->f64
+    {
+        if i_export >=self.results.0.records.time.len()
+        {
+            panic!("Out of range");
+        }
+
+        if let Ok(res) = read_model_properties(key,&self.results.1,i_export)
+        {
+            return res.mean().unwrap();
+        }
+        panic!("ALLO");
+    }
+
+    pub fn n_export(&self)->usize
+    {
+        self.results.0.records.time.len()
+    }
+
 
 }

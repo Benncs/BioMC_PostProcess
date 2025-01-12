@@ -11,8 +11,7 @@ pub struct Dim(pub usize, pub usize);
 use hdf5::Result;
 pub use main_file::{MainFInal, MainInitial, MainRecords, MainResult, Misc};
 use ndarray::{Array2, ArrayView2, ArrayView3, Shape};
-pub use _impl::read_model_mass;
-
+pub use _impl::{read_model_mass,read_model_properties,read_avg_model_properties};
 
 #[derive(Debug)]
 pub struct Results(pub MainResult,pub Vec<String>,pub Array2<f64>);

@@ -1,36 +1,8 @@
 use hdf5::Group;
-use ndarray::{s, Array2, ArrayView1, ArrayView2};
+use ndarray::{s, Array2, ArrayView1,Array1};
 use std::collections::HashMap;
 use super::main_file::{Misc,MainFInal,MainRecords,MainInitial};
 use super::{ResultGroup,Dim};
-
-impl ResultGroup<Misc> for hdf5::Group {
-    fn read_g(&self) -> hdf5::Result<Misc> {
-        let mut fields: HashMap<String, u64> = HashMap::new();
-        self.iter_visit_default(&mut fields, |group, name, _link_info, fields| {
-            if let Ok(dataset) = group.dataset(name) {
-                if let Ok(value) = dataset.read_scalar::<u64>() {
-                    fields.insert(name.to_string(), value);
-                }
-            }
-            // Continue the iteration
-            true
-        })
-        .unwrap();
-
-        Ok(Misc {
-            n_node_thread: *fields.get("n_node_thread").unwrap_or(&0),
-            n_rank: *fields.get("n_rank").unwrap_or(&0),
-        })
-    }
-}
-
-// macro_rules! read_scalar_or_default {
-//     ($group:expr, $name:expr, $type:ty) => {
-//         $group
-//             .dataset($name)?.read_scalar::<$type>()?
-//     };
-// }
 
 macro_rules! read_scalar {
     // Match the types f64, usize, or u64 and provide the correct default behavior
@@ -58,6 +30,27 @@ macro_rules! read_vec {
     };
 }
 
+impl ResultGroup<Misc> for hdf5::Group {
+    fn read_g(&self) -> hdf5::Result<Misc> {
+        let mut fields: HashMap<String, u64> = HashMap::new();
+        self.iter_visit_default(&mut fields, |group, name, _link_info, fields| {
+            if let Ok(dataset) = group.dataset(name) {
+                if let Ok(value) = dataset.read_scalar::<u64>() {
+                    fields.insert(name.to_string(), value);
+                }
+            }
+            // Continue the iteration
+            true
+        })
+        .unwrap();
+
+        Ok(Misc {
+            n_node_thread: *fields.get("n_node_thread").unwrap_or(&0),
+            n_rank: *fields.get("n_rank").unwrap_or(&0),
+        })
+    }
+}
+
 pub fn read_number_particle(filename:&str)->hdf5::Result<Vec<f64>>
 {
     let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
@@ -66,9 +59,9 @@ pub fn read_number_particle(filename:&str)->hdf5::Result<Vec<f64>>
     Ok(v)
 }
 
-
-pub fn read_model_mass(files: &[String], cx: &mut Array2<f64>, n_export: usize) -> hdf5::Result<()> {
-    for (i_file, filename) in files.iter().enumerate() {
+fn read_spatial_model_properties(key:&str,files: &[String], cx: &mut Array2<f64>, n_export: usize)-> hdf5::Result<()> 
+{
+    for (_, filename) in files.iter().enumerate() {
         // Open the HDF5 file in read mode
         let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
         
@@ -77,7 +70,7 @@ pub fn read_model_mass(files: &[String], cx: &mut Array2<f64>, n_export: usize) 
         
         for i_e in 0..n_export {
             // Read the data for the current export index
-            let tmp: Vec<f64> = match group.dataset(&format!("{}/spatial/mass", i_e)) {
+            let tmp: Vec<f64> = match group.dataset(&format!("{}/spatial/{}", i_e,key)) {
                 Ok(dataset) => dataset.read_raw::<f64>()?, // Read the data directly as Vec<f64>
                 Err(_) => continue, // Skip if the dataset doesn't exist
             };
@@ -94,6 +87,66 @@ pub fn read_model_mass(files: &[String], cx: &mut Array2<f64>, n_export: usize) 
         }
     }
     Ok(())
+}
+
+pub fn read_model_properties(key:&str,files:&[String],i_export:usize)-> hdf5::Result<Array1<f64>> 
+{
+    let mut total_size = 0;
+    for (_, filename) in files.iter().enumerate() {
+        // Open the HDF5 file in read mode
+        let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
+        
+        // Access the "biological_model" group
+        let group = file.group("biological_model")?;
+        let dataset = group.dataset(&format!("{}/{}", i_export,key))?;
+        total_size+=dataset.size();
+    }
+
+    let mut result = Array1::zeros(total_size);
+
+    let mut offset = 0;
+    for (_, filename) in files.iter().enumerate() {
+        // Open the HDF5 file in read mode
+        let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
+        
+        // Access the "biological_model" group
+        let group = file.group("biological_model")?;
+        let dataset = group.dataset(&format!("{}/{}", i_export, key))?;
+        
+        // Read the dataset into a temporary array
+        let temp_array :Vec<f64>= dataset.read_raw::<f64>()?;
+        let tmp_array = ArrayView1::from_shape(temp_array.len(), &temp_array) .map_err(|_| hdf5::Error::Internal("Shape mismatch while creating ArrayView1".to_string()))?;
+        
+        // Copy the data into the result array
+        result.slice_mut(s![offset..offset + temp_array.len()]).assign(&tmp_array);
+        
+        offset += temp_array.len();
+    }
+
+    Ok(result)  
+}
+
+pub fn read_avg_model_properties(key: &str, files: &[String], n_export: usize) -> hdf5::Result<Array1<f64>> {
+    let mut result = Array1::zeros(n_export);
+    let mut tot_particle:Array1<f64> = Array1::zeros(n_export);
+
+    for filename in files {
+        let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
+        let group = file.group("biological_model")?;
+
+        for i_e in 0..n_export {
+            let dataset = group.dataset(&format!("{}/{}", i_e, key))?;
+            let temp_array: Vec<f64> = dataset.read_raw::<f64>()?;
+            result[i_e] += temp_array.iter().sum::<f64>();
+            tot_particle[i_e] += temp_array.len() as f64;
+        }
+    }
+
+    Ok(result / tot_particle)
+}
+
+pub fn read_model_mass(files: &[String], cx: &mut Array2<f64>, n_export: usize) -> hdf5::Result<()> {
+    read_spatial_model_properties("mass",files,cx,n_export)
 }
 
 
