@@ -14,7 +14,7 @@ def main():
     # c =results.get_spatial_average_concentration(0,biomc_pp.Phase.Liquid)
     # ctt =results.get_time_average_concentration(0,0,biomc_pp.Phase.Liquid)
     
-    pp = biomc_pp.PostProcess("cstr2","/home/benjamin/Documents/code/cpp/BioCMA-MCST/results/")
+    pp = biomc_pp.PostProcess("test","/home_pers/casale/Documents/code/biomc/results/")
 
     p = pp.get_growth_in_number()
     
@@ -32,12 +32,12 @@ def main():
     def calculate_mean2():
         return pp.get_time_population_mean("age")
 
-    mean_time = timeit.timeit(calculate_mean, number=10)
-    print(f"Mean execution time: {mean_time / 10} seconds")
+    # mean_time = timeit.timeit(calculate_mean, number=10)
+    # print(f"Mean execution time: {mean_time / 10} seconds")
 
-    # Benchmark mean2
-    mean2_time = timeit.timeit(calculate_mean2, number=10)
-    print(f"Mean2 execution time: {mean2_time / 10} seconds")
+    # # Benchmark mean2
+    # mean2_time = timeit.timeit(calculate_mean2, number=10)
+    # print(f"Mean2 execution time: {mean2_time / 10} seconds")
 
     plt.plot(calculate_mean())
     mean =pp.get_time_population_mean("age")
