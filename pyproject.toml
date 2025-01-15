@@ -16,12 +16,17 @@ dependencies = [
     "matplotlib"
 ]
 
-
+[project.optional-dependencies]
+vtk = [
+  'cmtool>=1.0.0',
+    'vtk==9.3.0',
+]
 
 [project.scripts]
 main = "biomc_pp:main"
 
 [tool.maturin]
+python-source = "."
 profile = "release"
 bindings = "pyo3"
 features = ["pyo3/extension-module"]
