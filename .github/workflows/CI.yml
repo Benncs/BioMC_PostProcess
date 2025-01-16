@@ -61,37 +61,37 @@ jobs:
           name: wheels-linux-${{ matrix.platform.target }}
           path: dist
 
-  musllinux:
-    runs-on: ${{ matrix.platform.runner }}
-    strategy:
-      matrix:
-        platform:
-          - runner: ubuntu-22.04
-            target: x86_64
+  # musllinux:
+    # runs-on: ${{ matrix.platform.runner }}
+    #strategy:
+    # matrix:
+        #   platform:
+# - runner: ubuntu-22.04
+ #           target: x86_64
           # - runner: ubuntu-22.04
           #   target: x86
           # - runner: ubuntu-22.04
           #   target: aarch64
           # - runner: ubuntu-22.04
           #   target: armv7
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.x
-      - name: Build wheels
-        uses: PyO3/maturin-action@v1
-        with:
-          before-script-linux: apk add -y hdf5 hdf5-dev 
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter
-          sccache: 'true'
-          manylinux: musllinux_1_2
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-musllinux-${{ matrix.platform.target }}
-          path: dist
+    #  steps:
+      # - uses: actions/checkout@v4
+      # - uses: actions/setup-python@v5
+        # with:
+          #  python-version: 3.x
+      #- name: Build wheels
+        # uses: PyO3/maturin-action@v1
+        #with:
+          # before-script-linux: pip install hdf5  
+          # target: ${{ matrix.platform.target }}
+          # args: --release --out dist --find-interpreter
+          #sccache: 'true'
+          #manylinux: musllinux_1_2
+      #- name: Upload wheels
+        # uses: actions/upload-artifact@v4
+        #with:
+          # name: wheels-musllinux-${{ matrix.platform.target }}
+          #path: dist
 
   windows:
     runs-on: ${{ matrix.platform.runner }}
@@ -111,7 +111,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          before-script-linux: apk add -y hdf5 hdf5-dev 
+          before-script-linux: yum install -y hdf5-devel 
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
