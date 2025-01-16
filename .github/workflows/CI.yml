@@ -108,6 +108,9 @@ jobs:
         with:
           python-version: 3.x
           architecture: ${{ matrix.platform.target }}
+      - name: Install HDF5
+        run: |
+          choco install hdf5
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
