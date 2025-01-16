@@ -82,6 +82,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          before-script-linux: yum install -y hdf5-devel 
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
@@ -110,6 +111,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          before-script-linux: yum install -y hdf5-devel 
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
@@ -137,6 +139,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
+          before-script-linux: yum install -y hdf5-devel 
           args: --release --out dist --find-interpreter
           sccache: 'true'
       - name: Upload wheels
