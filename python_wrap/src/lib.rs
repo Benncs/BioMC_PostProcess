@@ -124,7 +124,7 @@ impl PythonPostProcess {
     }
 
     #[getter]
-    fn get_max_n_export_bio(&self)->usize
+    fn max_n_export_bio(&self)->usize
     {
         return self.inner.get_max_n_export_bio();
     }
