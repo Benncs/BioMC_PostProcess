@@ -111,7 +111,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          before-script-linux: yum install -y hdf5-devel 
+          before-script-linux: apk add -y hdf5 hdf5-dev 
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
