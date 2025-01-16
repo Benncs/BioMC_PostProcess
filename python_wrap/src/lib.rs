@@ -123,6 +123,13 @@ impl PythonPostProcess {
         Ok(self.inner.n_export())
     }
 
+    #[getter]
+    fn get_max_n_export_bio(&self)->usize
+    {
+        return self.inner.get_max_n_export_bio();
+    }
+
+
     fn get_spatial_average_concentration(
         &self,
         py: Python<'_>,
@@ -199,6 +206,8 @@ impl PythonPostProcess {
 
         return PyArray1::from_owned_array(py, e).unbind();
     }
+
+
 }
 
 #[pymodule]

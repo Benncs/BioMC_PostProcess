@@ -49,6 +49,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          before-script-linux: apt-get update && apt-get install -y cmake libhdf5-dev 
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'

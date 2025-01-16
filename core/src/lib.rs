@@ -3,7 +3,7 @@ mod process;
 
 use datamodel::Results;
 use datamodel::{
-    read_avg_model_properties, read_model_properties, vec_to_array_view2, vec_to_array_view3, Dim,
+    read_avg_model_properties, read_model_properties, vec_to_array_view2, vec_to_array_view3, Dim,get_n_export_real
 };
 use ndarray::{s, Array1, Array2, Axis};
 use process::{spatial_average_concentration, Histogram};
@@ -150,6 +150,17 @@ impl PostProcess {
             Err(e) => {
                 panic!("{:?}", e)
             }
+        };
+    }
+    
+    //n_export is the maximum export events (concentrations dump), this is not necessarly the same
+    //as the biological dump
+    pub fn get_max_n_export_bio(&self)->usize
+    {
+        return match get_n_export_real(&self.results.1)
+        {
+            Ok(size)=>size,
+            Err(_)=>0
         };
     }
 

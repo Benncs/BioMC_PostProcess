@@ -7,7 +7,7 @@ pub trait ResultGroup<T> {
 #[derive(Debug)]
 pub struct Dim(pub usize, pub usize);
 
-pub use _impl::{read_avg_model_properties, read_model_mass, read_model_properties};
+pub use _impl::{read_avg_model_properties, read_model_mass, read_model_properties,get_n_export_real};
 pub use main_file::MainResult;
 pub(crate) use ndarray::{Array2, ArrayView2, ArrayView3};
 

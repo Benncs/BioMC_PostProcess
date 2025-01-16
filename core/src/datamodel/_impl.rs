@@ -70,7 +70,7 @@ fn read_spatial_model_properties(
 
         // Access the "biological_model" group
         let group = file.group("biological_model")?;
-
+        //TODO: use group.len() instead of n_export 
         for i_e in 0..n_export {
             // Read the data for the current export index
             let tmp: Vec<f64> = match group.dataset(&format!("{}/spatial/{}", i_e, key)) {
@@ -86,13 +86,13 @@ fn read_spatial_model_properties(
             if tmp_array.len() == slice_shape {
                 cx.slice_mut(s![i_e, ..])
                     .zip_mut_with(&tmp_array, |a, b| *a += b);
-            } else {
-                eprintln!(
-                    "Shape mismatch: cx[{}, ..].shape = {}, tmp.shape = {}",
-                    i_e,
-                    slice_shape,
-                    tmp_array.len()
-                );
+                } else {
+                    eprintln!(
+                        "Shape mismatch: cx[{}, ..].shape = {}, tmp.shape = {}",
+                        i_e,
+                        slice_shape,
+                        tmp_array.len()
+                    );
             }
         }
     }
@@ -111,8 +111,13 @@ pub fn read_model_properties(
 
         // Access the "biological_model" group
         let group = file.group("biological_model")?;
-        let dataset = group.dataset(&format!("{}/{}", i_export, key))?;
-        total_size += dataset.size();
+        // Not all nodes have th=e same number of export so it happens that i_export is >
+        // number_export for the current file
+        if (group.len() as usize)>=i_export{
+            let dataset = group.dataset(&format!("{}/{}", i_export, key))?;
+            total_size += dataset.size();
+
+        }
     }
 
     let mut result = Array1::zeros(total_size);
@@ -124,23 +129,38 @@ pub fn read_model_properties(
 
         // Access the "biological_model" group
         let group = file.group("biological_model")?;
-        let dataset = group.dataset(&format!("{}/{}", i_export, key))?;
+        if (group.len() as usize)>=i_export{
+            let dataset = group.dataset(&format!("{}/{}", i_export, key))?;
 
-        // Read the dataset into a temporary array
-        let temp_array: Vec<f64> = dataset.read_raw::<f64>()?;
-        let tmp_array = ArrayView1::from_shape(temp_array.len(), &temp_array).map_err(|_| {
-            hdf5::Error::Internal("Shape mismatch while creating ArrayView1".to_string())
-        })?;
+            // Read the dataset into a temporary array
+            let temp_array: Vec<f64> = dataset.read_raw::<f64>()?;
+            let tmp_array = ArrayView1::from_shape(temp_array.len(), &temp_array).map_err(|_| {
+                hdf5::Error::Internal("Shape mismatch while creating ArrayView1".to_string())
+            })?;
 
-        // Copy the data into the result array
-        result
-            .slice_mut(s![offset..offset + temp_array.len()])
-            .assign(&tmp_array);
+            // Copy the data into the result array
+            result
+                .slice_mut(s![offset..offset + temp_array.len()])
+                .assign(&tmp_array);
 
-        offset += temp_array.len();
+            offset += temp_array.len();
+        }
     }
 
     Ok(result)
+}
+
+pub fn get_n_export_real(files:&[String])->hdf5::Result<usize>
+{
+    if files.len()<1
+    {
+        panic!("FIXME: not enough files")
+    }
+    let file = hdf5::File::open_as(&files[0], hdf5::file::OpenMode::Read)?;
+    let group = file.group("biological_model")?;
+    let group_size = group.len() as usize; //We export n_export times properties but if there is no
+                                           //particle we do not export. group_size <= n_export and for
+    Ok(group_size) 
 }
 
 pub fn read_avg_model_properties(
@@ -154,8 +174,10 @@ pub fn read_avg_model_properties(
     for filename in files {
         let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
         let group = file.group("biological_model")?;
-
-        for i_e in 0..n_export {
+        let group_size = group.len() as usize; //We export n_export times properties but if there is no
+                                               //particle we do not export. group_size <= n_export and for
+                                               //all i > group_size , value is set to 0   
+        for i_e in 0..group_size{
             let dataset = group.dataset(&format!("{}/{}", i_e, key))?;
             let temp_array: Vec<f64> = dataset.read_raw::<f64>()?;
             result[i_e] += temp_array.iter().sum::<f64>();
@@ -238,7 +260,7 @@ impl ResultGroup<MainFInal> for Group {
                 }
                 true
             })
-            .unwrap();
+        .unwrap();
         let number_particles = read_scalar!(self, "number_particles", u64);
 
         Ok(MainFInal {
