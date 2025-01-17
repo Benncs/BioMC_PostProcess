@@ -4,10 +4,10 @@ use plotly::ImageFormat;
 use plotly::{Layout, Plot, Scatter};
 fn main() {
     if let Ok(obj) = PostProcess::new(
-        "cstr",
-        Some("/home-local/casale/Documents/thesis/simulations/ecoli_model_2024/out".to_string()),
+        "cstr_0",
+        Some("/home-local/casale/Documents/thesis/simulations/ecoli_model_2024/out/steady_1/".to_string()),
     ) {
-        let x = obj.get_biomass_concentration();
+        let x = obj.get_biomass_concentration().unwrap();
         let time: Vec<f64> = obj.time().into_iter().map(|t| t / 3600.).collect();
         let xvec = x.slice(s![.., 0]).to_vec();
 
@@ -26,6 +26,12 @@ fn main() {
 
         plot.set_layout(layout);
 
-        plot.write_image("./examples/out.png", ImageFormat::PNG, 800, 600, 1.0);
+        plot.write_image("./examples/out.svg", ImageFormat::SVG, 800, 600, 1.0);
+        plot.write_html("./examples/out.html");
+
+        println!("{}",plot.to_inline_html(Some("div_plot_x")));
+    }
+    else {
+        println!("Simulation not found");
     }
 }

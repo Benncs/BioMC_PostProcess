@@ -904,6 +904,7 @@ checksum = "0746e9faf2b051db76470fd428cbc0db792db05346dedaae4a75b16d7be503b5"
 dependencies = [
  "dyn-clone",
  "erased-serde",
+ "ndarray 0.16.1",
  "once_cell",
  "plotly_derive",
  "plotly_kaleido",

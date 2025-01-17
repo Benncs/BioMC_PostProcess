@@ -3,44 +3,87 @@ mod process;
 
 use datamodel::Results;
 use datamodel::{
-    read_avg_model_properties, read_model_properties, vec_to_array_view2, vec_to_array_view3, Dim,get_n_export_real
+    get_n_export_real, read_avg_model_properties, read_model_properties, vec_to_array_view2,
+    vec_to_array_view3, Dim,
 };
-use ndarray::{s, Array1, Array2, Axis};
+use ndarray::{s, Array1, Array2, ArrayView1, Axis};
 use process::{spatial_average_concentration, Histogram};
 
-#[derive(Debug)]
-pub struct PostProcess {
-    folder: String,
-    root: String,
-    dest: String,
-    results: Results,
-}
-
+/// `Phase` enum represents different states or phases of a substance.
 #[derive(Clone, PartialEq)]
 pub enum Phase {
     Liquid,
     Gas,
 }
 
+/// The `PostProcess` struct handles post-processing of simulation results.
+///
+/// It contains the path to the results folder, the root directory, and the processed results.
+///
+/// The struct uses the `Results` struct internally, which is expected to contain time and other data.
+#[derive(Debug)]
+pub struct PostProcess {
+    folder: String,   // The folder where the simulation results are stored.
+    root: String,     // The root directory for the results.
+    dest: String,     // The destination path for output
+    results: Results, // The results of the simulation, which will be accessed for time and other data.
+}
+
 impl PostProcess {
-    pub fn new(folder: &str, root: Option<String>) -> Result<Self, ()> {
+    /// Creates a new instance of `PostProcess`.
+    ///
+    /// # Arguments
+    /// * `folder` - The name of the folder containing the simulation results.
+    /// * `root` - Optional root directory. Defaults to "./results/" if not provided.
+    ///
+    /// # Returns
+    /// * `Result<Self, String>` - Returns the `PostProcess` instance or an error message if initialization fails.
+    pub fn new(folder: &str, root: Option<String>) -> Result<Self, String> {
         let _root = root.unwrap_or_else(|| "./results/".to_string());
         let result_path = format!("{}/{}/{}.h5", _root, folder, folder);
-        let main = Results::new(&result_path, &_root, folder);
-        if main.is_none() {
-            return Err(());
-        }
-
+        let main = Results::new(&result_path, &_root, folder)?;
         Ok(Self {
             folder: folder.to_string(),
             root: _root,
             dest: String::new(),
-            results: main.unwrap(),
+            results: main,
         })
     }
 
+     /// Returns a reference to the time data from the simulation results.
+    ///
+    /// # Returns
+    /// * A slice of `f64` representing the time data.
     pub fn time(&self) -> &[f64] {
-        self.results.0.time()
+        self.results.main.time()
+    }
+
+    /// Returns an `ArrayView1<f64>` representing the time data from the simulation results.
+    ///
+    /// # Returns
+    /// * An `ArrayView1<f64>` containing the time data.
+    pub fn time_array(&self) -> ArrayView1<f64> {
+        let time = self.results.main.time();
+        ArrayView1::<f64>::from_shape(time.len(), time).unwrap()  // TODO: safe unwrap 
+    }
+
+    /// Retrieves the maximum number of export events specifically related to biological dumps from the simulation results.
+    /// This value represents the real number of biological export events, which may not always align with the total number of exports.
+    ///
+    /// # Returns
+    /// * `usize` - The maximum number of biological export events, or `0` if no events are found or if an error occurs.
+    pub fn get_max_n_export_bio(&self) -> usize {
+        get_n_export_real(&self.results.files).unwrap_or(0)
+    }
+
+    
+    /// Returns the total number of export events from the simulation results.
+    /// This count includes all export actions, regardless of whether they are biological or not.
+    ///
+    /// # Returns
+    /// * `usize` - The total number of export events.
+    pub fn n_export(&self) -> usize {
+        self.results.main.records.time.len()
     }
 
     pub fn get_spatial_average_concentration(&self, species: usize, phase: Phase) -> Array1<f64> {
@@ -59,20 +102,20 @@ impl PostProcess {
             res
         }
 
-        let r = &self.results.0.records;
+        let r = &self.results.main.records;
         let nt = r.time.len();
         let dim = &r.dim;
 
         match phase {
             Phase::Gas => {
                 if let (Some(c), Some(v)) = (&r.concentration_gas, &r.volume_gas) {
-                    return process_phase(c, v, nt, &dim, species);
+                    return process_phase(c, v, nt, dim, species);
                 }
 
                 panic!("Gas is not present");
             }
             Phase::Liquid => {
-                process_phase(&r.concentration_liquid, &r.volume_liquid, nt, &dim, species)
+                process_phase(&r.concentration_liquid, &r.volume_liquid, nt, dim, species)
             }
         }
     }
@@ -83,85 +126,107 @@ impl PostProcess {
         position: usize,
         phase: Phase,
     ) -> Result<Array1<f64>, String> {
-        let r = &self.results.0.records;
+        let r = &self.results.main.records;
         let nt = r.time.len();
         let dim = &r.dim;
 
         let callback = |c: &Vec<f64>| {
-            let cl = vec_to_array_view3(&c, &dim, nt);
+            let cl = vec_to_array_view3(c, dim, nt);
             cl.slice(s![.., .., species]).mean_axis(Axis(0)).unwrap()
         };
 
-        return match phase {
+        match phase {
             Phase::Liquid => Ok(callback(&r.concentration_liquid)),
             Phase::Gas => {
                 if let Some(c) = &r.concentration_gas {
                     return Ok(callback(c));
                 }
 
-                return Err("Gas is not present".to_string());
+                Err("Gas is not present".to_string())
             }
-        };
+        }
     }
 
-    pub fn get_biomass_concentration(&self) -> Array2<f64> {
-        let nt = self.results.0.records.time.len();
-        let mut cx = Array2::zeros((nt, self.results.0.records.dim.0));
+    /// Calculates the biomass concentration over time for the simulation.
+    ///
+    /// # Returns
+    /// * `Result<Array2<f64>, String>` - A 2D array with biomass concentrations or an error message.
+    pub fn get_biomass_concentration(&self) -> Result<Array2<f64>, String> {
+        let nt = self.results.main.records.time.len(); // Number of time steps
+        let num_dimensions = self.results.main.records.dim.0; // Dimensionality
 
-        let err = datamodel::read_model_mass(&self.results.1, &mut cx, nt);
-        if !err.is_ok() {
-            panic!("Error read mass");
+        // Initialize the biomass matrix
+        let mut biomass_matrix = Array2::zeros((nt, num_dimensions));
+
+        // Attempt to read model mass
+        if let Err(err) = datamodel::read_model_mass(&self.results.files, &mut biomass_matrix, nt) {
+            return Err(format!("Failed to read model mass: {:?}", err));
         }
 
-        let vol = vec_to_array_view2(
-            &self.results.0.records.volume_liquid,
-            nt,
-            self.results.0.records.dim.0,
-        );
-        cx = cx * self.results.0.initial.initial_weight / vol;
+        // Convert volume to an array view
+        let volume =
+            vec_to_array_view2(&self.results.main.records.volume_liquid, nt, num_dimensions);
 
-        cx
+        // Calculate biomass concentration
+        biomass_matrix = biomass_matrix * self.results.main.initial.initial_weight / volume;
+
+        Ok(biomass_matrix)
     }
 
+    /// Calculates the total growth in number
+    ///
+    /// # Returns
+    /// * `Array1<f64>` - 1D array containing the summed growth numbers.
     pub fn get_growth_in_number(&self) -> Array1<f64> {
-        self.results.2.sum_axis(Axis(1))
+        self.results.total_particle_repetition.sum_axis(Axis(1))
     }
 
-    pub fn get_number_particle<'py>(&self) -> &Array2<f64> {
-        &self.results.2
+    /// Retrieves the 2D array of particle numbers.
+    ///
+    /// # Returns
+    /// * `&Array2<f64>` - Reference to the 2D array containing particle numbers.
+    pub fn get_number_particle(&self) -> &Array2<f64> {
+        &self.results.total_particle_repetition
     }
 
-    pub fn get_properties(&self, key: &str, i_export: usize) -> Array1<f64> {
-        if i_export >= self.results.0.records.time.len() {
-            panic!("Out of range");
+    /// Fetches specific properties of the model at a given export index.
+    ///
+    /// # Arguments
+    /// * `key` - The property key to fetch.
+    /// * `i_export` - The index of the export to retrieve.
+    ///
+    /// # Returns
+    /// * `Result<Array1<f64>, String>` - A 1D array of property values or an error message.
+    pub fn get_properties(&self, key: &str, i_export: usize) -> Result<Array1<f64>, String> {
+        if i_export >= self.results.main.records.time.len() {
+            return Err(format!(
+                "Index out of range: i_export ({}) exceeds available records ({}).",
+                i_export,
+                self.results.main.records.time.len()
+            ));
         }
 
-        return match read_model_properties(key, &self.results.1, i_export) {
-            Ok(res) => res,
-            Err(e) => {
-                panic!("{:?}", e)
-            }
-        };
+        match read_model_properties(key, &self.results.files, i_export) {
+            Ok(res) => Ok(res),
+            Err(e) => Err(format!("Failed to read model properties: {:?}", e)),
+        }
     }
 
-    pub fn get_time_population_mean(&self, key: &str) -> Array1<f64> {
-        return match read_avg_model_properties(key, &self.results.1, self.n_export()) {
-            Ok(res) => res,
-            Err(e) => {
-                panic!("{:?}", e)
-            }
-        };
-    }
-    
-    //n_export is the maximum export events (concentrations dump), this is not necessarly the same
-    //as the biological dump
-    pub fn get_max_n_export_bio(&self)->usize
-    {
-        return match get_n_export_real(&self.results.1)
-        {
-            Ok(size)=>size,
-            Err(_)=>0
-        };
+    /// Calculates the population mean over time for a given property key.
+    ///
+    /// # Arguments
+    /// * `key` - The property key for which to calculate the mean.
+    ///
+    /// # Returns
+    /// * `Result<Array1<f64>, String>` - A 1D array of mean values over time or an error message.
+    pub fn get_time_population_mean(&self, key: &str) -> Result<Array1<f64>, String> {
+        match read_avg_model_properties(key, &self.results.files, self.n_export()) {
+            Ok(res) => Ok(res),
+            Err(e) => Err(format!(
+                "Failed to calculate time population mean for key '{}': {:?}",
+                key, e
+            )),
+        }
     }
 
     pub fn get_histogram(&self, key: &str) -> (Vec<f64>, Vec<f64>) {
@@ -169,22 +234,18 @@ impl PostProcess {
         let b = hist.get_bins().to_vec();
         let c = hist.get_counts().to_vec();
         //todo
-        return (b, c);
+        (b, c)
     }
 
-    pub fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, ()> {
+    pub fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, String> {
         // Check if the index is out of range
-        if i_export >= self.results.0.records.time.len() {
-            return Err(());
+        if i_export >= self.results.main.records.time.len() {
+            return Err("Out of range".to_string());
         }
 
-        match read_model_properties(key, &self.results.1, i_export) {
-            Ok(res) => res.mean().map_or(Err(()), Ok),
-            Err(_) => Err(()),
+        match read_model_properties(key, &self.results.files, i_export) {
+            Ok(res) => res.mean().ok_or("mean error".to_string()),
+            Err(e) => Err(e.to_string()),
         }
-    }
-
-    pub fn n_export(&self) -> usize {
-        self.results.0.records.time.len()
     }
 }

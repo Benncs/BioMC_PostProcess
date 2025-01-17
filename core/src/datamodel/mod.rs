@@ -1,5 +1,14 @@
 mod _impl;
 mod main_file;
+
+pub use _impl::{
+    get_n_export_real, read_avg_model_properties, read_model_mass, read_model_properties,
+};
+pub use main_file::MainResult;
+
+pub(crate) use ndarray::{Array2, ArrayView2, ArrayView3};
+
+
 pub trait ResultGroup<T> {
     fn read_g(&self) -> hdf5::Result<T>;
 }
@@ -7,41 +16,41 @@ pub trait ResultGroup<T> {
 #[derive(Debug)]
 pub struct Dim(pub usize, pub usize);
 
-pub use _impl::{read_avg_model_properties, read_model_mass, read_model_properties,get_n_export_real};
-pub use main_file::MainResult;
-pub(crate) use ndarray::{Array2, ArrayView2, ArrayView3};
 
 #[derive(Debug)]
-pub struct Results(pub MainResult, pub Vec<String>, pub Array2<f64>);
+pub struct Results{
+    pub main:MainResult, pub files:Vec<String>, pub total_particle_repetition:Array2<f64>}
 
 impl Results {
-    pub fn new(fp: &str, root: &str, folder: &str) -> Option<Self> {
-        if let Ok(main) = { MainResult::read(fp) } {
-            let list: Vec<String> = (0..main.misc.n_rank)
-                .map(|i| format!("{}/{}/{}_partial_{}.h5", root, folder, folder, i))
-                .collect();
-            let nt = main.records.time.len();
-            let shape = (nt, main.records.dim.0);
-            let mut total_particle_repetition: Array2<f64> = Array2::zeros(shape);
-            for i_f in &list {
-                match _impl::read_number_particle(i_f) {
-                    Ok(result) => {
-                        total_particle_repetition = total_particle_repetition
-                            + Array2::from_shape_vec(shape, result).unwrap();
-                    }
-                    Err(e) => {
-                        panic!("Error reading number of particles: {:?}", e);
-                    }
-                };
+    pub fn new(fp: &str, root: &str, folder: &str) -> Result<Self, String> {
+        match MainResult::read(fp) {
+            Ok(main) => {
+                let files: Vec<String> = (0..main.misc.n_rank)
+                    .map(|i| format!("{}/{}/{}_partial_{}.h5", root, folder, folder, i))
+                    .collect();
+                let nt = main.records.time.len();
+                let shape = (nt, main.records.dim.0);
+                let mut total_particle_repetition: Array2<f64> = Array2::zeros(shape);
+                for i_f in &files {
+                    match _impl::read_number_particle(i_f) {
+                        Ok(result) => {
+                            total_particle_repetition = total_particle_repetition
+                                + Array2::from_shape_vec(shape, result).unwrap();
+                        }
+                        Err(e) => {
+                            panic!("Error reading number of particles: {:?}", e);
+                        }
+                    };
+                }
+                Ok(Results {
+                    main,
+                    files,
+                    total_particle_repetition,
+                })
             }
-
-            return Some(Results {
-                0: main,
-                1: list,
-                2: total_particle_repetition,
-            });
+            Err(hdf5_error) => Err(hdf5_error.to_string()),
         }
-        return None;
+
     }
 }
 
@@ -56,6 +65,6 @@ pub fn vec_to_array_view3<'a>(vec: &'a Vec<f64>, dim: &'a Dim, nt: usize) -> Arr
         nt * dim.0 * dim.1,
         "Vector size must match dimensions."
     );
-    ArrayView3::from_shape((nt, dim.0.clone(), dim.1.clone()), vec)
+    ArrayView3::from_shape((nt, dim.0, dim.1), vec)
         .expect("Failed to create ArrayView2")
 }

@@ -165,9 +165,11 @@ impl PythonPostProcess {
     }
 
     fn get_biomass_concentration(&self, py: Python<'_>) -> Py<PyArray2<f64>> {
-        let e = self.inner.get_biomass_concentration();
-
-        return PyArray2::from_owned_array(py, e).unbind();
+        return match self.inner.get_biomass_concentration()
+        {
+            Ok(e)=>PyArray2::from_owned_array(py, e).unbind(),
+            Err(e)=>panic!("{}",e)
+        };
     }
 
     fn get_growth_in_number(&self, py: Python<'_>) -> Py<PyArray1<f64>> {
@@ -190,7 +192,7 @@ impl PythonPostProcess {
     fn get_properties(&self, py: Python<'_>, key: &str, i_export: usize) -> Py<PyArray1<f64>> {
         let e = self.inner.get_properties(key, i_export);
 
-        return PyArray1::from_owned_array(py, e).unbind();
+        return PyArray1::from_owned_array(py, e.unwrap()).unbind(); //TODO
     }
 
     fn get_population_mean(&self, key: &str, i_export: usize) -> PyResult<f64> {
@@ -204,7 +206,7 @@ impl PythonPostProcess {
     fn get_time_population_mean(&self, py: Python<'_>, key: &str) -> Py<PyArray1<f64>> {
         let e = self.inner.get_time_population_mean(key);
 
-        return PyArray1::from_owned_array(py, e).unbind();
+        return PyArray1::from_owned_array(py, e.unwrap()).unbind(); //TODO
     }
 
 

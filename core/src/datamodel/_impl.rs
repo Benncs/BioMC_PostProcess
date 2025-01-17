@@ -64,7 +64,7 @@ fn read_spatial_model_properties(
     cx: &mut Array2<f64>,
     n_export: usize,
 ) -> hdf5::Result<()> {
-    for (_, filename) in files.iter().enumerate() {
+    for filename in files.iter() {
         // Open the HDF5 file in read mode
         let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
 
@@ -105,7 +105,12 @@ pub fn read_model_properties(
     i_export: usize,
 ) -> hdf5::Result<Array1<f64>> {
     let mut total_size = 0;
-    for (_, filename) in files.iter().enumerate() {
+
+
+    
+
+
+    for filename in files.iter() {
         // Open the HDF5 file in read mode
         let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
 
@@ -123,7 +128,7 @@ pub fn read_model_properties(
     let mut result = Array1::zeros(total_size);
 
     let mut offset = 0;
-    for (_, filename) in files.iter().enumerate() {
+    for filename in files.iter() {
         // Open the HDF5 file in read mode
         let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
 
@@ -152,7 +157,7 @@ pub fn read_model_properties(
 
 pub fn get_n_export_real(files:&[String])->hdf5::Result<usize>
 {
-    if files.len()<1
+    if files.is_empty()
     {
         panic!("FIXME: not enough files")
     }
