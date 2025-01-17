@@ -14,3 +14,8 @@ ndarray = "0.16.1"
 [[example]]
 name = "rust"
 path = "example_rust.rs"
+
+
+[[example]]
+name = "rust_hist"
+path = "example_histogram.rs"

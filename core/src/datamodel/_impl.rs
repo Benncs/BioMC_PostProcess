@@ -1,3 +1,5 @@
+use crate::process::Histogram;
+
 use super::main_file::{MainFInal, MainInitial, MainRecords, Misc};
 use super::{Dim, ResultGroup};
 use hdf5::Group;
@@ -107,7 +109,7 @@ pub fn read_model_properties(
     let mut total_size = 0;
 
 
-    
+
 
 
     for filename in files.iter() {
@@ -166,6 +168,23 @@ pub fn get_n_export_real(files:&[String])->hdf5::Result<usize>
     let group_size = group.len() as usize; //We export n_export times properties but if there is no
                                            //particle we do not export. group_size <= n_export and for
     Ok(group_size) 
+}
+
+
+pub fn make_histogram(files:&[String],i_export:usize,key:&str,hist:&mut Histogram)->hdf5::Result<()>
+{
+    for filename in files.iter() {
+        // Open the HDF5 file in read mode
+        let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
+        let group = file.group("biological_model")?;
+        if (group.len() as usize)>=i_export{
+            let dataset = group.dataset(&format!("{}/{}", i_export, key))?;
+            let temp_array: Vec<f64> = dataset.read_raw::<f64>()?;
+            hist.add(temp_array);
+        }
+    }
+
+    Ok(())
 }
 
 pub fn read_avg_model_properties(

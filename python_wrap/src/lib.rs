@@ -1,3 +1,5 @@
+use std::f32::consts::E;
+
 use bcore::PostProcess;
 use numpy::PyArray1;
 use numpy::PyArray2;
@@ -207,6 +209,21 @@ impl PythonPostProcess {
         let e = self.inner.get_time_population_mean(key);
 
         return PyArray1::from_owned_array(py, e.unwrap()).unbind(); //TODO
+    }
+
+    pub fn get_histogram(&self, py: Python<'_>,n_bins:usize,i_export:usize,key: &str) -> (Py<PyArray1<f64>> ,Py<PyArray1<f64>> )
+    {
+        let e = self.inner.get_histogram(n_bins, i_export, key);
+
+        match e {
+            Ok((nbins,counts))=>{
+                (PyArray1::from_owned_array(py, nbins.into()).unbind(),PyArray1::from_owned_array(py, counts.into()).unbind())
+            },
+            Err(e) => {
+                panic!("histogram {}",e);
+            }
+        }
+
     }
 
 

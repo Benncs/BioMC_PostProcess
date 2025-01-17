@@ -2,7 +2,7 @@ mod _impl;
 mod main_file;
 
 pub use _impl::{
-    get_n_export_real, read_avg_model_properties, read_model_mass, read_model_properties,
+    get_n_export_real, read_avg_model_properties, read_model_mass, read_model_properties,make_histogram
 };
 pub use main_file::MainResult;
 

@@ -1,7 +1,7 @@
 mod datamodel;
 mod process;
 
-use datamodel::Results;
+use datamodel::{make_histogram, Results};
 use datamodel::{
     get_n_export_real, read_avg_model_properties, read_model_properties, vec_to_array_view2,
     vec_to_array_view3, Dim,
@@ -181,6 +181,8 @@ impl PostProcess {
         self.results.total_particle_repetition.sum_axis(Axis(1))
     }
 
+
+
     /// Retrieves the 2D array of particle numbers.
     ///
     /// # Returns
@@ -229,12 +231,29 @@ impl PostProcess {
         }
     }
 
-    pub fn get_histogram(&self, key: &str) -> (Vec<f64>, Vec<f64>) {
-        let hist = Histogram::new(1.);
+    pub fn get_histogram_array(&self, n_bins:usize,i_export:usize,key: &str) -> Result<(Array1<f64>, Array1<f64>),String> {
+        
+        let (b,c)=self.get_histogram(n_bins,i_export,key)?;
+        let b = Array1::from_vec(b);
+        let c =  Array1::from_vec(c);
+        Ok((b, c))
+    }
+
+    pub fn get_histogram(&self, n_bins:usize,i_export:usize,key: &str) -> Result<(Vec<f64>, Vec<f64>),String> {
+        
+        if i_export > self.n_export()
+        {
+            return Err("Out of range".to_owned());
+        }
+
+        // let np = n_bins;//*self.results.total_particle_repetition.sum_axis(Axis(1)).last().unwrap() as usize;
+        let mut hist = Histogram::new(n_bins);
+
+        let _ = make_histogram(&self.results.files,i_export,key,&mut hist);
+
         let b = hist.get_bins().to_vec();
         let c = hist.get_counts().to_vec();
-        //todo
-        (b, c)
+        Ok((b, c))
     }
 
     pub fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, String> {
