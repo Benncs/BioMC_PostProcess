@@ -1,6 +1,6 @@
 use std::f32::consts::E;
 
-use bcore::PostProcess;
+use bcore::{PostProcess,PostProcessUser};
 use numpy::PyArray1;
 use numpy::PyArray2;
 use pyo3::exceptions::PyValueError;

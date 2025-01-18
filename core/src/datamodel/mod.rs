@@ -1,25 +1,26 @@
 mod _impl;
 mod main_file;
+use main_file::MainResult;
+use ndarray::{Array2, ArrayView2, ArrayView3};
 
 pub use _impl::{
-    get_n_export_real, read_avg_model_properties, read_model_mass, read_model_properties,make_histogram
+    get_n_export_real, make_histogram, read_avg_model_properties, read_model_mass,
+    read_model_properties,
 };
-pub use main_file::MainResult;
 
-pub(crate) use ndarray::{Array2, ArrayView2, ArrayView3};
-
-
-pub trait ResultGroup<T> {
+trait ResultGroup<T> {
     fn read_g(&self) -> hdf5::Result<T>;
 }
 
 #[derive(Debug)]
 pub struct Dim(pub usize, pub usize);
 
-
 #[derive(Debug)]
-pub struct Results{
-    pub main:MainResult, pub files:Vec<String>, pub total_particle_repetition:Array2<f64>}
+pub struct Results {
+    pub main: MainResult,
+    pub files: Vec<String>,
+    pub total_particle_repetition: Array2<f64>,
+}
 
 impl Results {
     pub fn new(fp: &str, root: &str, folder: &str) -> Result<Self, String> {
@@ -50,7 +51,11 @@ impl Results {
             }
             Err(hdf5_error) => Err(hdf5_error.to_string()),
         }
+    }
 
+    pub fn get_files(&self)->&[String]
+    {
+        &self.files
     }
 }
 
@@ -65,6 +70,85 @@ pub fn vec_to_array_view3<'a>(vec: &'a Vec<f64>, dim: &'a Dim, nt: usize) -> Arr
         nt * dim.0 * dim.1,
         "Vector size must match dimensions."
     );
-    ArrayView3::from_shape((nt, dim.0, dim.1), vec)
-        .expect("Failed to create ArrayView2")
+    ArrayView3::from_shape((nt, dim.0, dim.1), vec).expect("Failed to create ArrayView2")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ndarray::{array, Array3};
+
+    #[test]
+    fn test_vec_to_array_view2_valid() {
+        let vec = vec![1.0, 2.0, 3.0, 4.0]; // 2x2 matrix
+        let nr = 2;
+        let nc = 2;
+
+        let view = vec_to_array_view2(&vec, nr, nc);
+
+        assert_eq!(view.shape(), &[2, 2]);
+        assert_eq!(view, array![[1.0, 2.0], [3.0, 4.0]]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Vector size must match dimensions.")]
+    fn test_vec_to_array_view2_invalid_size() {
+        let vec = vec![1.0, 2.0, 3.0]; // Incorrect size, should be 2x2
+        let nr = 2;
+        let nc = 2;
+
+        vec_to_array_view2(&vec, nr, nc);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_vec_to_array_view2_empty_vector() {
+        let vec: Vec<f64> = vec![];
+        let nr = 2;
+        let nc = 2;
+
+        vec_to_array_view2(&vec, nr, nc);
+    }
+    #[test]
+    fn test_vec_to_array_view3() {
+        let vec = vec![1.0; 6]; // 2 * 3 dimensions
+        let dim = &Dim { 0: 2, 1: 3 };
+        let nt = 1;
+        let vec_copy = vec.clone();
+        let array_view = vec_to_array_view3(&vec, dim, nt);
+
+        let expected_array = Array3::from_shape_vec((nt, dim.0, dim.1), vec_copy)
+            .expect("Failed to create expected Array3");
+        assert_eq!(array_view, expected_array.view());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_vec_to_array_view3_size_mismatch() {
+        let vec = vec![1.0, 2.0, 3.0];
+        let dim = &Dim { 0: 2, 1: 3 };
+        let nt = 1;
+
+        let _ = vec_to_array_view3(&vec, dim, nt);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_vec_to_array_view3_invalid_size() {
+        let vec = vec![1.0, 2.0, 3.0]; // Incorrect size, should be 1x2x3
+        let dim = Dim(1, 2);
+        let nt = 1;
+
+        vec_to_array_view3(&vec, &dim, nt);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_vec_to_array_view3_empty_vector() {
+        let vec: Vec<f64> = vec![];
+        let dim = Dim(1, 2);
+        let nt = 1;
+
+        vec_to_array_view3(&vec, &dim, nt);
+    }
 }

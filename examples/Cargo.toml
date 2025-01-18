@@ -15,6 +15,10 @@ ndarray = "0.16.1"
 name = "rust"
 path = "example_rust.rs"
 
+[[example]]
+name = "concat"
+path = "example_concat.rs"
+
 
 [[example]]
 name = "rust_hist"

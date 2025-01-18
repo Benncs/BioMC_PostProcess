@@ -1,6 +1,8 @@
 
 use std::collections::HashMap;
-use super::*;
+
+use super::{Dim, ResultGroup};
+
 
 #[derive(Debug)]
 pub struct Misc {
@@ -60,16 +62,16 @@ impl MainResult {
         let m_ds = file.group("final_result")?;
         let cfinal = ResultGroup::<MainFInal>::read_g(&m_ds)?;
 
-        return Ok(MainResult {
+        Ok(MainResult {
             records,
             initial,
             cfinal,
             misc,
-        });
+        })
     }
 
     pub fn time(&self)->&[f64]
     {
-        return &self.records.time;
+        &self.records.time
     }
 }

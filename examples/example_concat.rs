@@ -1,14 +1,22 @@
-use bcore::{PostProcess,PostProcessUser};
+use bcore::{ConcatPostPrcess,PostProcessUser};
 use ndarray::s;
 use plotly::ImageFormat;
 use plotly::{Layout, Plot, Scatter};
 fn main() {
-    if let Ok(obj) = PostProcess::new(
-        "cstr_0",
-        Some("/home-local/casale/Documents/thesis/simulations/ecoli_model_2024/out/steady_1/".to_string()),
+    if let Ok(obj) = ConcatPostPrcess::new(
+        &["uptake",
+    "uptake_22",
+    "uptake_23",
+    "uptake_24",
+    "uptake_25",
+    "uptake_26",
+    "uptake_27",
+    "uptake_28",
+    "uptake_29"],
+        Some("/home/benjamin/Documents/code/cpp/BioCMA-MCST/results/".to_string()),
     ) {
         let x = obj.get_biomass_concentration().unwrap();
-        let time: Vec<f64> = obj.time().into_iter().map(|t| t / 3600.).collect();
+        let time: Vec<f64> = obj.time_array().into_iter().map(|t| t / 3600.).collect();
         let xvec = x.slice(s![.., 0]).to_vec();
 
         let mut plot = Plot::new();
@@ -26,8 +34,9 @@ fn main() {
 
         plot.set_layout(layout);
 
-        plot.write_image("./examples/out.svg", ImageFormat::SVG, 800, 600, 1.0);
-        plot.write_html("./examples/out.html");
+        plot.write_image("./examples/out_concat.svg", ImageFormat::SVG, 800, 600, 1.0);
+        plot.write_html("./examples/out_concat.html");
+        plot.show();
 
         println!("{}",plot.to_inline_html(Some("div_plot_x")));
     }
