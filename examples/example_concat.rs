@@ -15,6 +15,7 @@ fn main() {
     "uptake_29"],
         Some("/home/benjamin/Documents/code/cpp/BioCMA-MCST/results/".to_string()),
     ) {
+        println!("{:?}",obj.get_property_names());
         let x = obj.get_biomass_concentration().unwrap();
         let time: Vec<f64> = obj.time_array().into_iter().map(|t| t / 3600.).collect();
         let xvec = x.slice(s![.., 0]).to_vec();

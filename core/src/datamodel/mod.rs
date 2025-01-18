@@ -1,5 +1,7 @@
 mod _impl;
 mod main_file;
+use std::path::PathBuf;
+
 use main_file::MainResult;
 use ndarray::{Array2, ArrayView2, ArrayView3};
 
@@ -29,6 +31,7 @@ impl Results {
                 let files: Vec<String> = (0..main.misc.n_rank)
                     .map(|i| format!("{}/{}/{}_partial_{}.h5", root, folder, folder, i))
                     .collect();
+                
                 let nt = main.records.time.len();
                 let shape = (nt, main.records.dim.0);
                 let mut total_particle_repetition: Array2<f64> = Array2::zeros(shape);
@@ -51,6 +54,38 @@ impl Results {
             }
             Err(hdf5_error) => Err(hdf5_error.to_string()),
         }
+    }
+
+    pub fn get_property_name(&self) -> Vec<String> {
+        
+        
+        if let Ok(file) = hdf5::File::open(&self.files[0]){
+            if let Ok(group) = file.group("biological_model/0")
+            {
+                let dataset_names: Vec<String> = group
+                .datasets().unwrap()
+                .into_iter().map(|d| PathBuf::from(d.name())
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("")
+                .to_string())  // Extract the names of each dataset
+                .collect();
+                return dataset_names;
+
+
+                // .attr_names().unwrap()
+                // .into_iter().map(|g| g)  // Extract the names of each group
+                // .collect();
+        
+            }
+        }
+    
+        vec![]
+        
+    
+       
+        
+        
     }
 
     pub fn get_files(&self)->&[String]

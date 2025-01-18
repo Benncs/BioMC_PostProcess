@@ -67,6 +67,8 @@ pub trait PostProcessUser {
     /// * `usize` - The total number of export events.
     fn n_export(&self) -> usize;
 
+    fn get_property_names(&self) -> Vec<String>;
+
     /// Computes the spatial average concentration for a specific species and phase.
     ///
     /// # Arguments
@@ -205,6 +207,10 @@ impl PostProcessUser for PostProcess {
         self.results.main.time()
     }
 
+    fn get_property_names(&self) -> Vec<String> {
+        self.results.get_property_name()
+    }
+
     /// Returns an `ArrayView1<f64>` representing the time data from the simulation results.
     ///
     /// # Returns
@@ -305,7 +311,9 @@ impl PostProcessUser for PostProcess {
         let mut biomass_matrix = Array2::zeros((nt, num_dimensions));
 
         // Attempt to read model mass
-        if let Err(err) = datamodel::read_model_mass(self.results.get_files(), &mut biomass_matrix, nt) {
+        if let Err(err) =
+            datamodel::read_model_mass(self.results.get_files(), &mut biomass_matrix, nt)
+        {
             return Err(format!("Failed to read model mass: {:?}", err));
         }
 
@@ -422,12 +430,19 @@ impl PostProcessUser for PostProcess {
 
 impl ConcatPostPrcess {
     pub fn new(folder: &[&str], root: Option<String>) -> Result<Self, String> {
-        let dataset: Vec<PostProcess> = folder
-            .iter()
-            .map(|f| PostProcess::new(f, root.clone()))
-            .collect::<Result<Vec<_>, _>>()?; // Collect into a Result and propagate errors
-
-        Ok(Self { dataset })
+        if folder.len() > 1 {
+            let dataset: Vec<PostProcess> = folder
+                .iter()
+                .map(|f| PostProcess::new(f, root.clone()))
+                .collect::<Result<Vec<_>, _>>()?; // Collect into a Result and propagate errors
+            if dataset.is_empty()
+            {
+                return Err("Need at least one file".to_string());
+            }
+            Ok(Self { dataset })
+        } else {
+            Err("Need at least one file".to_string())
+        }
     }
 
     /// Retrieves the last time value from each dataset in the collection.
@@ -450,6 +465,11 @@ impl ConcatPostPrcess {
 impl PostProcessUser for ConcatPostPrcess {
     fn time(&self) -> &[f64] {
         todo!()
+    }
+
+    fn get_property_names(&self) -> Vec<String> {
+        self.dataset[0].get_property_names() //Names SHOULD be the same 
+         
     }
 
     /// Concatenates the time arrays from all datasets into a single array view.

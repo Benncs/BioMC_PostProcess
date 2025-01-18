@@ -7,6 +7,8 @@ fn main() {
         "cstr_0",
         Some("/home-local/casale/Documents/thesis/simulations/ecoli_model_2024/out/steady_1/".to_string()),
     ) {
+       
+
         let x = obj.get_biomass_concentration().unwrap();
         let time: Vec<f64> = obj.time().into_iter().map(|t| t / 3600.).collect();
         let xvec = x.slice(s![.., 0]).to_vec();

@@ -81,7 +81,7 @@ dependencies = [
 
 [[package]]
 name = "bcore"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "hdf5",
  "ndarray 0.16.1",
@@ -377,7 +377,7 @@ dependencies = [
 
 [[package]]
 name = "examples"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "bcore",
  "ndarray 0.16.1",
@@ -1046,7 +1046,7 @@ dependencies = [
 
 [[package]]
 name = "python_wrap"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "bcore",
  "numpy",

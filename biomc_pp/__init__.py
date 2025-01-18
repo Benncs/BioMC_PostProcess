@@ -1,6 +1,7 @@
 from .biomc_pp import *
 import numpy as np
 from typing import List, Optional
+import numpy as np
 
 FIGURE_TYPE = ".png"
 TIME_UNIT = "s"
@@ -9,7 +10,6 @@ __all__ = []
 __doc__ = biomc_pp.__doc__
 if hasattr(biomc_pp, "__all__"):
     __all__ = biomc_pp.__all__
-import numpy as np
 
 
 def set_time_unit_to_hour():
@@ -34,9 +34,9 @@ def check_time_unit(results: PostProcess) -> np.ndarray:
 def get_post_process(name: str, root: str = "./results"):
     return PostProcess(name, root)
 
-
+#TODO Remove
 class ConcatPostProcess:
-    def __init__(self, name: List[str], root: str):
+    def __init__(self, name: List[str], root: Optional[str]="./results"):
         self.dataset = [PostProcess(n, root) for n in name]
 
     @property

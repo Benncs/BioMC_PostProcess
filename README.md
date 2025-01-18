@@ -12,9 +12,9 @@ It also includes **PyO3 bindings** to provide a high-level Python API for end us
 
 
 - **Core**
-    - **`datamodel`**: Implementation to read HDF5 files, ensuring efficient data extraction.
-    - **`process`**: Core for data manipulations and computations, enabling transformation of datasets.
-    - **`End-User API`**: Simplified methods for data extraction, processing, and visualization.
+    - **`datamodel`**: Implementation to read HDF5 results files
+    - **`process`**: for data manipulations and computations, enabling transformation of datasets.
+    - **`lib`**: End-User API: Simplified methods for data extraction, processing, and visualization.
 - **Python Wrap**
     - Rust bindings to be used in Python applications via `PyO3`, integrating Rust functionality with Python.
 - **biomc_pp**
@@ -34,4 +34,4 @@ It also includes **PyO3 bindings** to provide a high-level Python API for end us
 
 ### LICENSE 
 
-This tool is under [Apache License, Version 2.0](./LICENSE) *(Apache-2.0)*
+

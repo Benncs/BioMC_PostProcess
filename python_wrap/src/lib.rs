@@ -1,5 +1,4 @@
-use std::f32::consts::E;
-
+use bcore::ConcatPostPrcess;
 use bcore::{PostProcess,PostProcessUser};
 use numpy::PyArray1;
 use numpy::PyArray2;
@@ -43,11 +42,12 @@ pub enum Phase {
 }
 
 fn convert_phase(p: Phase) -> bcore::Phase {
-    return match p {
+    match p {
         Phase::Liquid => bcore::Phase::Liquid,
         Phase::Gas => bcore::Phase::Gas,
-    };
+    }
 }
+
 
 #[pymethods]
 impl PythonPostProcess {
@@ -84,6 +84,10 @@ impl PythonPostProcess {
         }
 
         Err(PyValueError::new_err("Error creating object"))
+    }
+
+    fn get_property_names(&self) -> PyResult<Vec<String>> {
+        Ok(self.inner.get_property_names())
     }
 
     /// Gets the time data
@@ -128,7 +132,7 @@ impl PythonPostProcess {
     #[getter]
     fn max_n_export_bio(&self)->usize
     {
-        return self.inner.get_max_n_export_bio();
+        self.inner.get_max_n_export_bio()
     }
 
 
@@ -142,7 +146,7 @@ impl PythonPostProcess {
             .inner
             .get_spatial_average_concentration(species, convert_phase(phase));
 
-        return PyArray1::from_owned_array(py, e).unbind();
+        PyArray1::from_owned_array(py, e).unbind()
     }
 
     fn get_time_average_concentration(
@@ -167,23 +171,23 @@ impl PythonPostProcess {
     }
 
     fn get_biomass_concentration(&self, py: Python<'_>) -> Py<PyArray2<f64>> {
-        return match self.inner.get_biomass_concentration()
+        match self.inner.get_biomass_concentration()
         {
             Ok(e)=>PyArray2::from_owned_array(py, e).unbind(),
             Err(e)=>panic!("{}",e)
-        };
+        }
     }
 
     fn get_growth_in_number(&self, py: Python<'_>) -> Py<PyArray1<f64>> {
         let e = self.inner.get_growth_in_number();
 
-        return PyArray1::from_owned_array(py, e).unbind();
+        PyArray1::from_owned_array(py, e).unbind()
     }
 
     fn get_number_particle<'py>(&self, py: Python<'_>) -> Py<PyArray2<f64>> {
         let e = self.inner.get_number_particle().to_owned();
 
-        return PyArray2::from_owned_array(py, e).unbind();
+        PyArray2::from_owned_array(py, e).unbind()
     }
 
     fn get_rtd(&self, flow: f64, step: f64, is_str: Option<bool>) -> PyResult<PyObject> {
@@ -194,21 +198,21 @@ impl PythonPostProcess {
     fn get_properties(&self, py: Python<'_>, key: &str, i_export: usize) -> Py<PyArray1<f64>> {
         let e = self.inner.get_properties(key, i_export);
 
-        return PyArray1::from_owned_array(py, e.unwrap()).unbind(); //TODO
+        PyArray1::from_owned_array(py, e.unwrap()).unbind()//TODO
     }
 
     fn get_population_mean(&self, key: &str, i_export: usize) -> PyResult<f64> {
         if let Ok(o) = self.inner.get_population_mean(key, i_export) {
-            return Ok(o);
+            Ok(o)
         } else {
-            return Err(PyValueError::new_err("Error get_population_mean"));
+            Err(PyValueError::new_err("Error get_population_mean"))
         }
     }
 
     fn get_time_population_mean(&self, py: Python<'_>, key: &str) -> Py<PyArray1<f64>> {
         let e = self.inner.get_time_population_mean(key);
 
-        return PyArray1::from_owned_array(py, e.unwrap()).unbind(); //TODO
+        PyArray1::from_owned_array(py, e.unwrap()).unbind()//TODO
     }
 
     pub fn get_histogram(&self, py: Python<'_>,n_bins:usize,i_export:usize,key: &str) -> (Py<PyArray1<f64>> ,Py<PyArray1<f64>> )
