@@ -257,6 +257,13 @@ impl ResultGroup<MainRecords> for Group {
             (Ok(cg), Ok(vg)) => (Some(cg.read_raw::<f64>()?), Some(vg.read_raw::<f64>()?)),
             _ => (None, None),
         };
+
+        let mtr = match self.dataset("mtr") 
+        {
+            Ok(_mtr) => Some(_mtr.read_raw::<f64>()?),
+            _ => None,
+        };
+
         let shape = self.dataset("concentration_liquid")?.shape();
         let dim = Dim(shape[1], shape[2]);
         let time = read_vec!(self, "time", f64);
@@ -265,6 +272,7 @@ impl ResultGroup<MainRecords> for Group {
             volume_liquid,
             concentration_gas,
             volume_gas,
+            mtr,
             dim,
             time,
         })

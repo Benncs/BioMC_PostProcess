@@ -1,7 +1,7 @@
 use bcore::ConcatPostPrcess;
-use bcore::{PostProcess,PostProcessUser};
-use numpy::{PyArray1, PyArray3};
+use bcore::{PostProcess, PostProcessUser};
 use numpy::PyArray2;
+use numpy::{PyArray1, PyArray3};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyList;
@@ -47,7 +47,6 @@ fn convert_phase(p: Phase) -> bcore::Phase {
         Phase::Gas => bcore::Phase::Gas,
     }
 }
-
 
 #[pymethods]
 impl PythonPostProcess {
@@ -110,8 +109,6 @@ impl PythonPostProcess {
         Ok(self.inner.time())
     }
 
-    
-
     /// Gets the number of exports
     ///
     /// This function retrieves the number of export events.
@@ -132,14 +129,12 @@ impl PythonPostProcess {
     }
 
     #[getter]
-    fn max_n_export_bio(&self)->usize
-    {
+    fn max_n_export_bio(&self) -> usize {
         self.inner.get_max_n_export_bio()
     }
 
     #[getter]
-    fn weight(&self)->f64
-    {
+    fn weight(&self) -> f64 {
         self.inner.weight()
     }
 
@@ -156,10 +151,15 @@ impl PythonPostProcess {
         PyArray1::from_owned_array(py, e).unbind()
     }
 
-    fn get_concentrations(&self, py: Python<'_>,phase: Phase) -> Py<PyArray3<f64>> {
-        let e = self
-        .inner
-        .get_concentrations(convert_phase(phase));
+    fn get_spatial_average_mtr(&self, py: Python<'_>, species: usize) -> Py<PyArray1<f64>> {
+        match self.inner.get_spatial_average_mtr(species) {
+            Ok(e) => PyArray1::from_owned_array(py, e).unbind(),
+            Err(e) => panic!("{}", e),
+        }
+    }
+
+    fn get_concentrations(&self, py: Python<'_>, phase: Phase) -> Py<PyArray3<f64>> {
+        let e = self.inner.get_concentrations(convert_phase(phase));
 
         PyArray3::from_owned_array(py, e.to_owned()).unbind()
     }
@@ -186,10 +186,9 @@ impl PythonPostProcess {
     }
 
     fn get_biomass_concentration(&self, py: Python<'_>) -> Py<PyArray2<f64>> {
-        match self.inner.get_biomass_concentration()
-        {
-            Ok(e)=>PyArray2::from_owned_array(py, e).unbind(),
-            Err(e)=>panic!("{}",e)
+        match self.inner.get_biomass_concentration() {
+            Ok(e) => PyArray2::from_owned_array(py, e).unbind(),
+            Err(e) => panic!("{}", e),
         }
     }
 
@@ -213,7 +212,7 @@ impl PythonPostProcess {
     fn get_properties(&self, py: Python<'_>, key: &str, i_export: usize) -> Py<PyArray1<f64>> {
         let e = self.inner.get_properties(key, i_export);
 
-        PyArray1::from_owned_array(py, e.unwrap()).unbind()//TODO
+        PyArray1::from_owned_array(py, e.unwrap()).unbind() //TODO
     }
 
     fn get_population_mean(&self, key: &str, i_export: usize) -> PyResult<f64> {
@@ -227,25 +226,28 @@ impl PythonPostProcess {
     fn get_time_population_mean(&self, py: Python<'_>, key: &str) -> Py<PyArray1<f64>> {
         let e = self.inner.get_time_population_mean(key);
 
-        PyArray1::from_owned_array(py, e.unwrap()).unbind()//TODO
+        PyArray1::from_owned_array(py, e.unwrap()).unbind() //TODO
     }
 
-    pub fn get_histogram(&self, py: Python<'_>,n_bins:usize,i_export:usize,key: &str) -> (Py<PyArray1<f64>> ,Py<PyArray1<f64>> )
-    {
+    pub fn get_histogram(
+        &self,
+        py: Python<'_>,
+        n_bins: usize,
+        i_export: usize,
+        key: &str,
+    ) -> (Py<PyArray1<f64>>, Py<PyArray1<f64>>) {
         let e = self.inner.get_histogram(n_bins, i_export, key);
 
         match e {
-            Ok((nbins,counts))=>{
-                (PyArray1::from_owned_array(py, nbins.into()).unbind(),PyArray1::from_owned_array(py, counts.into()).unbind())
-            },
+            Ok((nbins, counts)) => (
+                PyArray1::from_owned_array(py, nbins.into()).unbind(),
+                PyArray1::from_owned_array(py, counts.into()).unbind(),
+            ),
             Err(e) => {
-                panic!("histogram {}",e);
+                panic!("histogram {}", e);
             }
         }
-
     }
-
-
 }
 
 #[pymodule]

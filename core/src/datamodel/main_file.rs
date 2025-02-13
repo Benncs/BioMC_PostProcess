@@ -16,6 +16,7 @@ pub struct MainRecords {
     pub volume_liquid: Vec<f64>,
     pub concentration_gas: Option<Vec<f64>>,
     pub volume_gas: Option<Vec<f64>>,
+    pub mtr: Option<Vec<f64>>,
     pub dim: Dim,
     pub time:Vec<f64>,
 }

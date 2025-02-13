@@ -52,7 +52,12 @@ pub trait PostProcessUser {
 
 
     fn get_concentrations(&self, phase: Phase) -> ArrayView3<f64>;
+    
 
+    fn get_spatial_average_mtr(
+        &self,
+        species: usize,
+    ) -> Result<Array1<f64>, String>;
 
     /// Computes the time average concentration for a specific species, position, and phase.
     ///

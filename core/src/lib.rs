@@ -123,6 +123,25 @@ impl PostProcessUser for ConcatPostPrcess {
         Ok(concatenated)
     }
 
+    fn get_spatial_average_mtr(
+        &self,
+        species: usize,
+    ) -> Result<Array1<f64>, String>
+    {
+        let mut concatenated = Array1::<f64>::default(0);
+        for postprocess in &self.dataset {
+            match postprocess.get_spatial_average_mtr(species)
+            {
+                Ok(data)=>{
+                    concatenated.append(Axis(0), data.view()).unwrap();
+                }
+                e=>{return e;}
+            };
+            
+        }
+        Ok(concatenated)
+    }
+
     fn get_biomass_concentration(&self) -> Result<Array2<f64>, String> {
         let mut concatenated = Array2::<f64>::default((0, 0));
         let mut init = false;

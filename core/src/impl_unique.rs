@@ -61,6 +61,35 @@ impl PostProcessUser for PostProcess {
         self.results.get_property_name()
     }
 
+    fn get_spatial_average_mtr(
+        &self,
+        species: usize,
+    ) -> Result<Array1<f64>, String>
+    {
+        let r = &self.results.main.records;
+        let nt = r.time.len();
+        let dim = &r.dim;
+        
+
+        if let Some(mtr) = &r.mtr
+        {
+            let mtr = vec_to_array_view3(mtr, dim, nt);
+            return if let Some(avg)=mtr.slice(s![.., .., species]).mean_axis(Axis(1))
+            {
+                Ok(avg)
+            }
+            else
+            {
+                Err("Mtr error average".to_owned())
+            };
+
+        }
+
+        Err("Mtr is not available".to_owned())
+
+        // let mtr = vec_to_array_view3(self.results., &dim, nt);
+    }
+
     /// Returns an `ArrayView1<f64>` representing the time data from the simulation results.
     ///
     /// # Returns
