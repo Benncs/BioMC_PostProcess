@@ -1,6 +1,6 @@
 use bcore::ConcatPostPrcess;
 use bcore::{PostProcess,PostProcessUser};
-use numpy::PyArray1;
+use numpy::{PyArray1, PyArray3};
 use numpy::PyArray2;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -110,6 +110,8 @@ impl PythonPostProcess {
         Ok(self.inner.time())
     }
 
+    
+
     /// Gets the number of exports
     ///
     /// This function retrieves the number of export events.
@@ -135,6 +137,11 @@ impl PythonPostProcess {
         self.inner.get_max_n_export_bio()
     }
 
+    #[getter]
+    fn weight(&self)->f64
+    {
+        self.inner.weight()
+    }
 
     fn get_spatial_average_concentration(
         &self,
@@ -147,6 +154,14 @@ impl PythonPostProcess {
             .get_spatial_average_concentration(species, convert_phase(phase));
 
         PyArray1::from_owned_array(py, e).unbind()
+    }
+
+    fn get_concentrations(&self, py: Python<'_>,phase: Phase) -> Py<PyArray3<f64>> {
+        let e = self
+        .inner
+        .get_concentrations(convert_phase(phase));
+
+        PyArray3::from_owned_array(py, e.to_owned()).unbind()
     }
 
     fn get_time_average_concentration(

@@ -1,4 +1,4 @@
-use ndarray::{Array1, Array2, ArrayView2, ArrayView3, Axis};
+use ndarray::{Array1, Array2, ArrayView2, ArrayView1, Axis};
 
 pub fn spatial_average_concentration(
     concentration_record: &ArrayView2<f64>,
@@ -9,6 +9,33 @@ pub fn spatial_average_concentration(
     let denominator = full_volume.sum_axis(Axis(1));
     numerator / denominator
 }
+
+pub fn normalize_concentration(concentration_record: &ArrayView2<f64>,mean_concentration: &ArrayView1<f64>)->Array2<f64>
+{
+    concentration_record/mean_concentration
+}
+
+pub fn variance_concentration(mean_concentration: &ArrayView1<f64>,concentration_record: &ArrayView2<f64>,full_volume: &ArrayView2<f64>)-> Array1<f64> 
+{
+    let mean_concentration = spatial_average_concentration(concentration_record,full_volume);
+    ((concentration_record-mean_concentration).pow2()*full_volume).sum_axis(Axis(1))
+}
+
+
+// def normalize_concentration(
+//     raw_concentration: np.ndarray, volumes: np.ndarray
+// ) -> Tuple[np.ndarray, float, float]:
+//     vtot = np.sum(volumes, axis=1)
+//     mean_concentration = np.sum(raw_concentration * volumes, axis=1) / vtot
+//     mean_concentration = mean_concentration.reshape(-1, 1)
+//     variance = (
+//         np.sum(np.power(raw_concentration - mean_concentration, 2) * volumes, axis=1)
+//         / vtot
+//     )
+//     return raw_concentration / mean_concentration, mean_concentration, variance
+
+
+
 
 pub struct Histogram {
     bins: Vec<f64>,

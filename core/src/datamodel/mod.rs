@@ -2,7 +2,7 @@ mod _impl;
 mod main_file;
 use std::path::PathBuf;
 
-use main_file::MainResult;
+pub use main_file::MainResult;
 use ndarray::{Array2, ArrayView2, ArrayView3};
 
 pub use _impl::{
