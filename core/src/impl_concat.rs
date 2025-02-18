@@ -1,7 +1,7 @@
 use crate::api::{PostProcessReader};
 
 use crate::datamodel::Weight;
-use crate::{Phase, PostProcess};
+use crate::{ApiError, Phase, PostProcess};
 use ndarray::{Array1, Array2, ArrayView3, Axis};
 
 #[derive(Debug)]
@@ -51,7 +51,7 @@ impl PostProcessReader for ConcatPostPrcess {
         todo!()
     }
 
-    fn get_spatial_average_biomass_concentration(&self) -> Result<Array1<f64>, String> {
+    fn get_spatial_average_biomass_concentration(&self) -> Result<Array1<f64>, ApiError> {
         let mut concatenated = Array1::<f64>::default(0);
         for postprocess in &self.dataset {
             match postprocess.get_spatial_average_biomass_concentration() {
@@ -109,7 +109,7 @@ impl PostProcessReader for ConcatPostPrcess {
         species: usize,
         position: usize,
         phase: Phase,
-    ) -> Result<Array1<f64>, String> {
+    ) -> Result<Array1<f64>, ApiError> {
         let mut concatenated = Array1::<f64>::default(0);
         for postprocess in &self.dataset {
             match postprocess.get_time_average_concentration(species, position, phase) {
@@ -120,7 +120,7 @@ impl PostProcessReader for ConcatPostPrcess {
         Ok(concatenated)
     }
 
-    fn get_spatial_average_mtr(&self, species: usize) -> Result<Array1<f64>, String> {
+    fn get_spatial_average_mtr(&self, species: usize) -> Result<Array1<f64>, ApiError> {
         let mut concatenated = Array1::<f64>::default(0);
         for postprocess in &self.dataset {
             match postprocess.get_spatial_average_mtr(species) {
@@ -135,7 +135,7 @@ impl PostProcessReader for ConcatPostPrcess {
         Ok(concatenated)
     }
 
-    fn get_biomass_concentration(&self) -> Result<Array2<f64>, String> {
+    fn get_biomass_concentration(&self) -> Result<Array2<f64>, ApiError> {
         let mut concatenated = Array2::<f64>::default((0, 0));
         let mut init = false;
         for postprocess in &self.dataset {
@@ -145,7 +145,7 @@ impl PostProcessReader for ConcatPostPrcess {
                         concatenated = data;
                         init = true;
                     } else if let Err(err) = concatenated.append(Axis(0), data.view()) {
-                        return Err(err.to_string());
+                        return Err(ApiError::Default(err.to_string()));
                     }
                 }
 
@@ -168,11 +168,11 @@ impl PostProcessReader for ConcatPostPrcess {
         todo!()
     }
 
-    fn get_properties(&self, key: &str, i_export: usize) -> Result<Array1<f64>, String> {
+    fn get_properties(&self, key: &str, i_export: usize) -> Result<Array1<f64>, ApiError> {
         todo!()
     }
 
-    fn get_time_population_mean(&self, key: &str) -> Result<Array1<f64>, String> {
+    fn get_time_population_mean(&self, key: &str) -> Result<Array1<f64>, ApiError> {
         todo!()
     }
 
@@ -181,7 +181,7 @@ impl PostProcessReader for ConcatPostPrcess {
         n_bins: usize,
         i_export: usize,
         key: &str,
-    ) -> Result<(Array1<f64>, Array1<f64>), String> {
+    ) -> Result<(Array1<f64>, Array1<f64>), ApiError> {
         todo!()
     }
 
@@ -190,11 +190,11 @@ impl PostProcessReader for ConcatPostPrcess {
         n_bins: usize,
         i_export: usize,
         key: &str,
-    ) -> Result<(Vec<f64>, Vec<f64>), String> {
+    ) -> Result<(Vec<f64>, Vec<f64>), ApiError> {
         todo!()
     }
 
-    fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, String> {
+    fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, ApiError> {
         todo!()
     }
 }

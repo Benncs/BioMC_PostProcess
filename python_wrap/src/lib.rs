@@ -1,5 +1,5 @@
-use bcore::api::{ModelEstimator};
-use bcore::{PostProcess, PostProcessReader};
+use bcore::api::ModelEstimator;
+use bcore::{ApiError, PostProcess, PostProcessReader};
 use numpy::PyArray2;
 use numpy::{PyArray1, PyArray3};
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
@@ -73,23 +73,24 @@ pub enum Estimator {
     Weighted,
 }
 
-impl From<Estimator> for bcore::api::Estimator {
+impl From<Estimator> for bcore::Estimator {
     fn from(val: Estimator) -> Self {
         match val {
-            Estimator::MonteCarlo => bcore::api::Estimator::MonteCarlo,
-            Estimator::Weighted => bcore::api::Estimator::Weighted,
+            Estimator::MonteCarlo => bcore::Estimator::MonteCarlo,
+            Estimator::Weighted => bcore::Estimator::Weighted,
         }
     }
 }
 
-impl From<bcore::api::Estimator> for Estimator {
-    fn from(phase: bcore::api::Estimator) -> Self {
+impl From<bcore::Estimator> for Estimator {
+    fn from(phase: bcore::Estimator) -> Self {
         match phase {
-            bcore::api::Estimator::MonteCarlo => Estimator::MonteCarlo,
-            bcore::api::Estimator::Weighted => Estimator::Weighted,
+            bcore::Estimator::MonteCarlo => Estimator::MonteCarlo,
+            bcore::Estimator::Weighted => Estimator::Weighted,
         }
     }
 }
+
 
 #[pymethods]
 impl PythonPostProcess {
@@ -301,7 +302,7 @@ impl PythonPostProcess {
     pub fn mu_direct(&self, py: Python<'_>) -> PyResult<Py<PyArray1<f64>>> {
         match self.inner.mu_direct() {
             Ok(e) => Ok(PyArray1::from_owned_array(py, e).unbind()),
-            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(format!("mu_direct error: {}", e))),
+            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e.to_string())),
         }
     }
 
@@ -309,7 +310,7 @@ impl PythonPostProcess {
     {
         match self.inner.estimate(etype.into(),key,i_export) {
             Ok(e) => Ok(e),
-            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(format!("mu_direct error: {}", e))),
+            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e.to_string())),
         }
     }
     
@@ -317,7 +318,7 @@ impl PythonPostProcess {
     {
         match self.inner.get_spatial_average_biomass_concentration() {
             Ok(e) => Ok(PyArray1::from_owned_array(py, e).unbind()),
-            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(format!("get_spatial_average_biomass_concentration: {}", e))),
+            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e.to_string())),
         }
     }
 
@@ -325,7 +326,7 @@ impl PythonPostProcess {
     {
         match self.inner.estimate_time(etype.into(),key) {
             Ok(e) => Ok(PyArray1::from_owned_array(py, e).unbind()),
-            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(format!("mu_direct error: {}", e))),
+            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e.to_string())),
         }
     }
 }

@@ -1,12 +1,12 @@
-use crate::api::{Estimator, ModelEstimator, PostProcessReader};
+use crate::api::{ModelEstimator, PostProcessReader};
 use crate::datamodel::{
     get_n_export_real, read_avg_model_properties, read_model_mass, read_model_properties,
     vec_to_array_view2, vec_to_array_view3, Dim, Weight,
 };
 use crate::datamodel::{make_histogram, Results};
 use crate::process::{spatial_average_concentration, Histogram};
-use crate::Phase;
-use ndarray::{s, Array1, Array2, Array3, ArrayView3, Axis};
+use crate::{ApiError, Estimator, Phase};
+use ndarray::{s, Array1, Array2, ArrayView3, Axis};
 
 /// The `PostProcess` struct handles post-processing of simulation results.
 ///
@@ -56,21 +56,21 @@ impl PostProcessReader for PostProcess {
         self.results.get_property_name()
     }
 
-    fn get_spatial_average_mtr(&self, species: usize) -> Result<Array1<f64>, String> {
+    fn get_spatial_average_mtr(&self, species: usize) -> Result<Array1<f64>, ApiError> {
         let r = &self.results.main.records;
         let nt = r.time.len();
         let dim = &r.dim;
 
         if let Some(mtr) = &r.mtr {
             let mtr = vec_to_array_view3(mtr, dim, nt);
-            return if let Some(avg) = mtr.slice(s![.., .., species]).mean_axis(Axis(1)) {
-                Ok(avg)
-            } else {
-                Err("Mtr error average".to_owned())
+
+            return match mtr.slice(s![.., .., species]).mean_axis(Axis(1)) {
+                Some(avg) => Ok(avg),
+                None => Err(ApiError::ShapeError),
             };
         }
 
-        Err("Mtr is not available".to_owned())
+        Err(ApiError::RecordsError("mtr".to_string()))
 
         // let mtr = vec_to_array_view3(self.results., &dim, nt);
     }
@@ -157,7 +157,7 @@ impl PostProcessReader for PostProcess {
         }
     }
 
-    fn get_spatial_average_biomass_concentration(&self) -> Result<Array1<f64>, String> {
+    fn get_spatial_average_biomass_concentration(&self) -> Result<Array1<f64>, ApiError> {
         let num_dimensions = self.results.main.records.dim.0;
         let nt = self.results.main.records.time.len();
         let volume =
@@ -185,7 +185,7 @@ impl PostProcessReader for PostProcess {
         species: usize,
         position: usize,
         phase: Phase,
-    ) -> Result<Array1<f64>, String> {
+    ) -> Result<Array1<f64>, ApiError> {
         let r = &self.results.main.records;
         let nt = r.time.len();
         let dim = &r.dim;
@@ -202,7 +202,7 @@ impl PostProcessReader for PostProcess {
                     return Ok(callback(c));
                 }
 
-                Err("Gas is not present".to_string())
+                Err(ApiError::RecordsError("Gas".to_string()))
             }
         }
     }
@@ -211,7 +211,7 @@ impl PostProcessReader for PostProcess {
     ///
     /// # Returns
     /// * `Result<Array2<f64>, String>` - A 2D array with biomass concentrations or an error message.
-    fn get_biomass_concentration(&self) -> Result<Array2<f64>, String> {
+    fn get_biomass_concentration(&self) -> Result<Array2<f64>, ApiError> {
         let nt: usize = self.results.main.records.time.len(); // Number of time steps
         let num_dimensions = self.results.main.records.dim.0; // Dimensionality
 
@@ -220,7 +220,10 @@ impl PostProcessReader for PostProcess {
 
         // Attempt to read model mass
         if let Err(err) = read_model_mass(self.results.get_files(), &mut biomass_matrix, nt) {
-            return Err(format!("Failed to read model mass: {:?}", err));
+            return Err(ApiError::Default(format!(
+                "Failed to read model mass: {:?}",
+                err
+            )));
         }
 
         // Convert volume to an array view
@@ -257,18 +260,18 @@ impl PostProcessReader for PostProcess {
     ///
     /// # Returns
     /// * `Result<Array1<f64>, String>` - A 1D array of property values or an error message.
-    fn get_properties(&self, key: &str, i_export: usize) -> Result<Array1<f64>, String> {
+    fn get_properties(&self, key: &str, i_export: usize) -> Result<Array1<f64>, ApiError> {
         if i_export >= self.results.main.records.time.len() {
-            return Err(format!(
-                "Index out of range: i_export ({}) exceeds available records ({}).",
+            return Err(ApiError::OutOfRange(
                 i_export,
-                self.results.main.records.time.len()
+                self.results.main.records.time.len(),
             ));
         }
 
         match read_model_properties(key, self.results.get_files(), i_export) {
             Ok(res) => Ok(res),
-            Err(e) => Err(format!("Failed to read model properties: {:?}", e)),
+            // Err(e) => Err(format!("Failed to read model properties: {:?}", e)),
+            Err(_) => Err(ApiError::KeyError(key.to_owned())),
         }
     }
 
@@ -279,13 +282,13 @@ impl PostProcessReader for PostProcess {
     ///
     /// # Returns
     /// * `Result<Array1<f64>, String>` - A 1D array of mean values over time or an error message.
-    fn get_time_population_mean(&self, key: &str) -> Result<Array1<f64>, String> {
+    fn get_time_population_mean(&self, key: &str) -> Result<Array1<f64>, ApiError> {
         match read_avg_model_properties(key, self.results.get_files(), self.n_export()) {
             Ok(res) => Ok(res),
-            Err(e) => Err(format!(
+            Err(e) => Err(ApiError::Default(format!(
                 "Failed to calculate time population mean for key '{}': {:?}",
                 key, e
-            )),
+            ))),
         }
     }
 
@@ -294,7 +297,7 @@ impl PostProcessReader for PostProcess {
         n_bins: usize,
         i_export: usize,
         key: &str,
-    ) -> Result<(Array1<f64>, Array1<f64>), String> {
+    ) -> Result<(Array1<f64>, Array1<f64>), ApiError> {
         let (b, c) = self.get_histogram(n_bins, i_export, key)?;
         let b = Array1::from_vec(b);
         let c = Array1::from_vec(c);
@@ -306,9 +309,9 @@ impl PostProcessReader for PostProcess {
         n_bins: usize,
         i_export: usize,
         key: &str,
-    ) -> Result<(Vec<f64>, Vec<f64>), String> {
+    ) -> Result<(Vec<f64>, Vec<f64>), ApiError> {
         if i_export > self.n_export() {
-            return Err("Out of range".to_owned());
+            return Err(ApiError::OutOfRange(i_export, self.n_export()));
         }
 
         // let np = n_bins;//*self.results.total_particle_repetition.sum_axis(Axis(1)).last().unwrap() as usize;
@@ -321,15 +324,20 @@ impl PostProcessReader for PostProcess {
         Ok((b, c))
     }
 
-    fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, String> {
+    fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, ApiError> {
         // Check if the index is out of range
         if i_export >= self.results.main.records.time.len() {
-            return Err("Out of range".to_string());
+            return Err(ApiError::OutOfRange(
+                i_export,
+                self.results.main.records.time.len(),
+            ));
         }
 
         match read_model_properties(key, self.results.get_files(), i_export) {
-            Ok(res) => res.mean().ok_or("mean error".to_string()),
-            Err(e) => Err(e.to_string()),
+            Ok(res) => res
+                .mean()
+                .ok_or(ApiError::Default("get_population_mean".to_string())),
+            Err(e) => Err(ApiError::Default(e.to_string())),
         }
     }
 }
@@ -364,15 +372,15 @@ impl ModelEstimator for PostProcess {
         }
     }
 
-    fn estimate(&self, etype: Estimator, key: &str, i_export: usize) -> Result<f64, String> {
+    fn estimate(&self, etype: Estimator, key: &str, i_export: usize) -> Result<f64, ApiError> {
         //calcule estimator in place is better
         match self.get_properties(key, i_export) {
-            Ok(rx) => Ok(Self::_estimate(etype, self.weight(), &rx)),
+            Ok(rx) => Ok(crate::process::estimate(etype, self.weight(), &rx)),
             Err(e) => Err(e),
         }
     }
 
-    fn estimate_time(&self, etype: Estimator, key: &str) -> Result<Array1<f64>, String> {
+    fn estimate_time(&self, etype: Estimator, key: &str) -> Result<Array1<f64>, ApiError> {
         let nt = self.results.main.records.time.len();
         let mut estimator = Array1::<f64>::zeros(nt);
         for i in 0..nt {

@@ -1,4 +1,6 @@
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
+use crate::Weight;
+use crate::Estimator;
 
 pub fn spatial_average_concentration(
     concentration_record: &ArrayView2<f64>,
@@ -88,4 +90,32 @@ impl Histogram {
     }
 }
 
-fn direct_growth_rate() {}
+pub(crate) fn estimate(etype: Estimator, weight: &Weight, rx: &Array1<f64>) -> f64 {
+    let weighted_estimator = match weight {
+        Weight::Single(sw) => (rx * *sw).sum(),
+        Weight::Multiple(mw) => rx.iter().zip(mw).map(|(x, w)| x * w).sum(),
+    };
+
+    if weighted_estimator == 0. {
+        return 0.;
+    }
+    match etype {
+        // Estimator::MonteCarlo => self
+        //     .get_properties(key, i_export)
+        //     .map(|x| x.sum() / (x.len() as f64))
+        //     .unwrap_or(0.),
+        Estimator::MonteCarlo => {
+
+            let denum = match weight {
+                Weight::Single(sw) => (rx.dim() as f64)**sw,
+                Weight::Multiple(mw) => mw.iter().sum(),
+            };
+
+
+
+            weighted_estimator / denum //Normalise
+        }
+
+        Estimator::Weighted => weighted_estimator,
+    }
+}
