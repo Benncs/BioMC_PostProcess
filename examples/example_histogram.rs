@@ -1,4 +1,4 @@
-use bcore::{PostProcess,PostProcessUser};
+use bcore::{PostProcess,PostProcessReader};
 use plotly::layout::{Shape, ShapeLine, ShapeType};
 use plotly::{ImageFormat, Scatter};
 use plotly::{Bar, Layout, Plot};

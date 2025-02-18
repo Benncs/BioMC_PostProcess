@@ -1,7 +1,7 @@
 
 use std::collections::HashMap;
 
-use super::{Dim, ResultGroup};
+use super::{Dim, ResultGroup,Weight};
 
 
 #[derive(Debug)]
@@ -9,6 +9,8 @@ pub struct Misc {
     pub n_node_thread: u64,
     pub n_rank: u64,
 }
+
+
 
 #[derive(Debug)]
 pub struct MainRecords {
@@ -45,6 +47,7 @@ pub struct MainResult {
     pub initial: MainInitial,
     pub cfinal: MainFInal,
     pub misc: Misc,
+    pub weight: Weight
 }
 
 impl MainResult {
@@ -63,11 +66,15 @@ impl MainResult {
         let m_ds = file.group("final_result")?;
         let cfinal = ResultGroup::<MainFInal>::read_g(&m_ds)?;
 
+
+        let weight = Weight::Single(initial.initial_weight); //TODO switch between single and multi weight
+
         Ok(MainResult {
             records,
             initial,
             cfinal,
             misc,
+            weight
         })
     }
 

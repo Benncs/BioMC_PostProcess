@@ -107,11 +107,6 @@ pub fn read_model_properties(
     i_export: usize,
 ) -> hdf5::Result<Array1<f64>> {
     let mut total_size = 0;
-
-
-
-
-
     for filename in files.iter() {
         // Open the HDF5 file in read mode
         let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
@@ -128,7 +123,6 @@ pub fn read_model_properties(
     }
 
     let mut result = Array1::zeros(total_size);
-
     let mut offset = 0;
     for filename in files.iter() {
         // Open the HDF5 file in read mode

@@ -1,18 +1,18 @@
-use ndarray::{Array1, Array2,Array3, ArrayView3};
+use crate::datamodel::Weight;
 use crate::Phase;
-
+use ndarray::{Array1, Array2, Array3, ArrayView1, ArrayView3};
 
 /// A trait for postprocessing operations on simulation results.
 ///
 /// This trait defines various methods for analyzing and retrieving data from simulation results.
-pub trait PostProcessUser {
+pub trait PostProcessReader {
     /// Returns a reference to the time data from the simulation results.
     ///
     /// # Returns
     /// * `&[f64]` - A slice containing the time data.
     fn time(&self) -> &[f64];
 
-    fn weight(&self)->f64;
+    fn weight(&self) -> &Weight;
 
     /// Returns a 1D array view of the time data from the simulation results.
     ///
@@ -49,15 +49,11 @@ pub trait PostProcessUser {
     /// * `Array1<f64>` - A 1D array containing the spatial average concentrations over time.
     fn get_spatial_average_concentration(&self, species: usize, phase: Phase) -> Array1<f64>;
 
-
+    fn get_spatial_average_biomass_concentration(&self) -> Result<Array1<f64>, String>;
 
     fn get_concentrations(&self, phase: Phase) -> ArrayView3<f64>;
-    
 
-    fn get_spatial_average_mtr(
-        &self,
-        species: usize,
-    ) -> Result<Array1<f64>, String>;
+    fn get_spatial_average_mtr(&self, species: usize) -> Result<Array1<f64>, String>;
 
     /// Computes the time average concentration for a specific species, position, and phase.
     ///
@@ -159,8 +155,114 @@ pub trait PostProcessUser {
     /// # Returns
     /// * `Result<f64, String>` - The population mean, or an error message if the calculation fails.
     fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, String>;
+}
+
+#[derive(Copy,Clone)]
+pub enum Estimator {
+    MonteCarlo,
+    Weighted,
+}
+
+pub trait ModelEstimator {
+    fn mu_direct(&self) -> Result<Array1<f64>, String>;
+
+    fn estimate(&self, etype: Estimator, key: &str, i_export: usize) -> Result<f64, String>;
+
+    fn estimate_time(&self, etype: Estimator, key: &str) -> Result<Array1<f64>, String>;
+
+    fn _estimate(etype: Estimator, weight: &Weight, rx: &Array1<f64>) -> f64 {
+        let weighted_estimator = match weight {
+            Weight::Single(sw) => (rx * *sw).sum(),
+            Weight::Multiple(mw) => rx.iter().zip(mw).map(|(x, w)| x * w).sum(),
+        };
+
+        if weighted_estimator == 0. {
+            return 0.;
+        }
+        match etype {
+            // Estimator::MonteCarlo => self
+            //     .get_properties(key, i_export)
+            //     .map(|x| x.sum() / (x.len() as f64))
+            //     .unwrap_or(0.),
+            Estimator::MonteCarlo => {
+
+                let denum = match weight {
+                    Weight::Single(sw) => (rx.dim() as f64)**sw,
+                    Weight::Multiple(mw) => mw.iter().sum(),
+                };
 
 
-    
 
+                weighted_estimator / denum //Normalise
+            }
+
+            Estimator::Weighted => weighted_estimator,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ndarray::Array1;
+
+    struct MockEstimator {}
+
+    impl ModelEstimator for MockEstimator {
+        fn estimate_time(&self, _etype: Estimator, _key: &str) -> Result<Array1<f64>, String> {
+            unreachable!();
+        }
+        fn mu_direct(&self) -> Result<Array1<f64>, String> {
+            unreachable!();
+        }
+
+        fn estimate(&self, _etype: Estimator, _: &str, _e: usize) -> Result<f64, String> {
+            unreachable!();
+        }
+    }
+
+    #[test]
+    fn test_monte_carlo_estimate() {
+        let rx = Array1::from(vec![2.0, 4.0, 6.0]);
+        let weight = 2.0;
+
+
+        let result = MockEstimator::_estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx);
+        let dim = rx.dim();
+        let weighted_estimator: f64 = (rx * weight).sum(); // (2.0*2.0 + 4.0*2.0 + 6.0*2.0) = 24.0
+        let normalization_factor = (0..dim).map(|_| weight).sum::<f64>(); // 2.0 * 3 = 6.0
+        let expected_result = weighted_estimator / normalization_factor; // 24.0 / 6.0 = 4.0
+        assert_eq!(result, expected_result);
+    }
+
+    #[test]
+    fn test_weighted_estimate() {
+        let rx = Array1::from(vec![2.0, 4.0, 6.0]);
+        let weight = 2.0;
+
+        let result = MockEstimator::_estimate(Estimator::Weighted, &Weight::Single(weight), &rx);
+
+        let weighted_estimator: f64 = (rx * weight).sum(); // (2.0*2.0 + 4.0*2.0 + 6.0*2.0) = 24.0
+        let expected_result = weighted_estimator; // Since it's weighted, it should return the weighted sum.
+        assert_eq!(result, expected_result);
+    }
+
+    #[test]
+    fn test_zero_weight() {
+        let rx = Array1::from(vec![2.0, 4.0, 6.0]);
+        let weight = 0.0;
+
+        let result = MockEstimator::_estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx);
+        assert_eq!(result, 0.0);
+    }
+
+    #[test]
+    fn test_empty_array() {
+        let rx = Array1::from(vec![]);
+        let weight = 2.0;
+        let result = MockEstimator::_estimate(Estimator::Weighted, &Weight::Single(weight), &rx);
+
+        // With an empty array, the result should be zero
+        assert_eq!(result, 0.0);
+    }
 }

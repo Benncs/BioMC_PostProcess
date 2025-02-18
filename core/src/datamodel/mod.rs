@@ -17,6 +17,15 @@ trait ResultGroup<T> {
 #[derive(Debug)]
 pub struct Dim(pub usize, pub usize);
 
+
+#[derive(Debug)]
+pub enum Weight {
+    Single(f64),  // Represents a single f64 value
+    Multiple(Vec<f64>),  // Represents a vector of f64 values
+}
+
+
+
 #[derive(Debug)]
 pub struct Results {
     pub main: MainResult,
@@ -79,14 +88,13 @@ impl Results {
         
             }
         }
-    
-        vec![]
-        
-    
-       
-        
+        todo!()
         
     }
+
+
+    
+
 
     pub fn get_files(&self)->&[String]
     {

@@ -1,11 +1,11 @@
-use bcore::ConcatPostPrcess;
-use bcore::{PostProcess, PostProcessUser};
+use bcore::api::{ModelEstimator};
+use bcore::{PostProcess, PostProcessReader};
 use numpy::PyArray2;
 use numpy::{PyArray1, PyArray3};
-use pyo3::exceptions::PyValueError;
+use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
-
+use bcore::Weight;
 /// A struct that wraps the `PostProcess` type for Python bindings.
 ///
 /// The `PythonPostProcess` struct is designed to provide a Python interface for the
@@ -41,10 +41,53 @@ pub enum Phase {
     Gas,
 }
 
-fn convert_phase(p: Phase) -> bcore::Phase {
-    match p {
-        Phase::Liquid => bcore::Phase::Liquid,
-        Phase::Gas => bcore::Phase::Gas,
+impl From<Phase> for bcore::Phase {
+    fn from(val: Phase) -> Self {
+        match val {
+            Phase::Liquid => bcore::Phase::Liquid,
+            Phase::Gas => bcore::Phase::Gas,
+        }
+    }
+}
+
+impl From<bcore::Phase> for Phase {
+    fn from(phase: bcore::Phase) -> Self {
+        match phase {
+            bcore::Phase::Liquid => Phase::Liquid,
+            bcore::Phase::Gas => Phase::Gas,
+        }
+    }
+}
+
+
+/// An enum representing different phases .
+/// # Example
+/// ```python
+/// phase = Phase.Liquid
+/// assert phase == Phase.Liquid
+/// ```
+#[derive(Clone, PartialEq)]
+#[pyclass(eq, eq_int)]
+pub enum Estimator {
+    MonteCarlo,
+    Weighted,
+}
+
+impl From<Estimator> for bcore::api::Estimator {
+    fn from(val: Estimator) -> Self {
+        match val {
+            Estimator::MonteCarlo => bcore::api::Estimator::MonteCarlo,
+            Estimator::Weighted => bcore::api::Estimator::Weighted,
+        }
+    }
+}
+
+impl From<bcore::api::Estimator> for Estimator {
+    fn from(phase: bcore::api::Estimator) -> Self {
+        match phase {
+            bcore::api::Estimator::MonteCarlo => Estimator::MonteCarlo,
+            bcore::api::Estimator::Weighted => Estimator::Weighted,
+        }
     }
 }
 
@@ -134,8 +177,14 @@ impl PythonPostProcess {
     }
 
     #[getter]
-    fn weight(&self) -> f64 {
-        self.inner.weight()
+    fn weight(&self,py: Python<'_>) -> Py<PyArray1<f64>> {
+        match self.inner.weight()
+        {
+            Weight::Single(sw)=>{PyArray1::from_vec(py, vec![*sw]).unbind()},
+            Weight::Multiple(mw)=>{PyArray1::from_vec(py, mw.clone()).unbind()}
+        }
+
+        
     }
 
     fn get_spatial_average_concentration(
@@ -146,7 +195,7 @@ impl PythonPostProcess {
     ) -> Py<PyArray1<f64>> {
         let e = self
             .inner
-            .get_spatial_average_concentration(species, convert_phase(phase));
+            .get_spatial_average_concentration(species, phase.into());
 
         PyArray1::from_owned_array(py, e).unbind()
     }
@@ -159,7 +208,7 @@ impl PythonPostProcess {
     }
 
     fn get_concentrations(&self, py: Python<'_>, phase: Phase) -> Py<PyArray3<f64>> {
-        let e = self.inner.get_concentrations(convert_phase(phase));
+        let e = self.inner.get_concentrations(phase.into());
 
         PyArray3::from_owned_array(py, e.to_owned()).unbind()
     }
@@ -173,7 +222,7 @@ impl PythonPostProcess {
     ) -> Py<PyArray1<f64>> {
         if let Ok(e) =
             self.inner
-                .get_time_average_concentration(species, position, convert_phase(phase))
+                .get_time_average_concentration(species, position, phase.into())
         {
             return PyArray1::from_owned_array(py, e).unbind();
         }
@@ -248,12 +297,45 @@ impl PythonPostProcess {
             }
         }
     }
+
+    pub fn mu_direct(&self, py: Python<'_>) -> PyResult<Py<PyArray1<f64>>> {
+        match self.inner.mu_direct() {
+            Ok(e) => Ok(PyArray1::from_owned_array(py, e).unbind()),
+            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(format!("mu_direct error: {}", e))),
+        }
+    }
+
+    pub fn estimate(&self, etype: Estimator, key: &str, i_export: usize) -> PyResult<f64> 
+    {
+        match self.inner.estimate(etype.into(),key,i_export) {
+            Ok(e) => Ok(e),
+            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(format!("mu_direct error: {}", e))),
+        }
+    }
+    
+    fn get_spatial_average_biomass_concentration(&self,py: Python<'_>) -> PyResult<Py<PyArray1<f64>>>
+    {
+        match self.inner.get_spatial_average_biomass_concentration() {
+            Ok(e) => Ok(PyArray1::from_owned_array(py, e).unbind()),
+            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(format!("get_spatial_average_biomass_concentration: {}", e))),
+        }
+    }
+
+    pub fn estimate_time(&self, py: Python<'_>,etype: Estimator, key: &str) -> PyResult<Py<PyArray1<f64>>>
+    {
+        match self.inner.estimate_time(etype.into(),key) {
+            Ok(e) => Ok(PyArray1::from_owned_array(py, e).unbind()),
+            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(format!("mu_direct error: {}", e))),
+        }
+    }
 }
 
 #[pymodule]
 mod biomc_pp {
     #[pymodule_export]
     use super::Phase;
+    #[pymodule_export]
+    use super::Estimator;
     #[pymodule_export]
     use super::PythonPostProcess;
 }

@@ -1,14 +1,12 @@
-use crate::api::PostProcessUser;
-use crate::Phase;
+use crate::api::{Estimator, ModelEstimator, PostProcessReader};
 use crate::datamodel::{
-    get_n_export_real, read_avg_model_properties, read_model_properties, vec_to_array_view2,
-    vec_to_array_view3, Dim,read_model_mass,
+    get_n_export_real, read_avg_model_properties, read_model_mass, read_model_properties,
+    vec_to_array_view2, vec_to_array_view3, Dim, Weight,
 };
 use crate::datamodel::{make_histogram, Results};
-use ndarray::{s, Array1, Array2, Array3, ArrayView3, Axis};
 use crate::process::{spatial_average_concentration, Histogram};
-
-
+use crate::Phase;
+use ndarray::{s, Array1, Array2, Array3, ArrayView3, Axis};
 
 /// The `PostProcess` struct handles post-processing of simulation results.
 ///
@@ -22,7 +20,6 @@ pub struct PostProcess {
     dest: String,     // The destination path for output
     results: Results, // The results of the simulation, which will be accessed for time and other data.
 }
-
 
 impl PostProcess {
     /// Creates a new instance of `PostProcess`.
@@ -46,43 +43,31 @@ impl PostProcess {
     }
 }
 
-impl PostProcessUser for PostProcess {
+impl PostProcessReader for PostProcess {
     fn time(&self) -> &[f64] {
         self.results.main.time()
     }
 
-    
-    fn weight(&self)->f64
-    {
-        self.results.main.initial.initial_weight
+    fn weight(&self) -> &Weight {
+        &self.results.main.weight
     }
 
     fn get_property_names(&self) -> Vec<String> {
         self.results.get_property_name()
     }
 
-    fn get_spatial_average_mtr(
-        &self,
-        species: usize,
-    ) -> Result<Array1<f64>, String>
-    {
+    fn get_spatial_average_mtr(&self, species: usize) -> Result<Array1<f64>, String> {
         let r = &self.results.main.records;
         let nt = r.time.len();
         let dim = &r.dim;
-        
 
-        if let Some(mtr) = &r.mtr
-        {
+        if let Some(mtr) = &r.mtr {
             let mtr = vec_to_array_view3(mtr, dim, nt);
-            return if let Some(avg)=mtr.slice(s![.., .., species]).mean_axis(Axis(1))
-            {
+            return if let Some(avg) = mtr.slice(s![.., .., species]).mean_axis(Axis(1)) {
                 Ok(avg)
-            }
-            else
-            {
+            } else {
                 Err("Mtr error average".to_owned())
             };
-
         }
 
         Err("Mtr is not available".to_owned())
@@ -117,25 +102,20 @@ impl PostProcessUser for PostProcess {
         self.results.main.records.time.len()
     }
 
-    fn get_concentrations(&self, phase: Phase) -> ArrayView3<f64>
-    {
-
+    fn get_concentrations(&self, phase: Phase) -> ArrayView3<f64> {
         let records = &self.results.main.records;
         let nt = records.time.len();
         let dim = &records.dim;
 
         match phase {
             Phase::Gas => {
-                if let (Some(c), Some(v)) = (&records.concentration_gas, &records.volume_gas) {
-                    return vec_to_array_view3(c, &dim, nt);
+                if let (Some(c), Some(_v)) = (&records.concentration_gas, &records.volume_gas) {
+                    return vec_to_array_view3(c, dim, nt);
                 }
 
                 panic!("Gas is not present");
             }
-            Phase::Liquid => {
-                vec_to_array_view3(&records.concentration_liquid, &dim, nt)
-            }
-        
+            Phase::Liquid => vec_to_array_view3(&records.concentration_liquid, dim, nt),
         }
     }
 
@@ -148,7 +128,7 @@ impl PostProcessUser for PostProcess {
             dim: &Dim,
             species: usize,
         ) -> Array1<f64> {
-            let cl = vec_to_array_view3(concentration, &dim, nt);
+            let cl = vec_to_array_view3(concentration, dim, nt);
             let vol = vec_to_array_view2(volume, nt, dim.0);
             let res = spatial_average_concentration(&cl.slice(s![.., .., species]), &vol);
 
@@ -167,10 +147,37 @@ impl PostProcessUser for PostProcess {
 
                 panic!("Gas is not present");
             }
-            Phase::Liquid => {
-                process_phase(&records.concentration_liquid, &records.volume_liquid, nt, dim, species)
+            Phase::Liquid => process_phase(
+                &records.concentration_liquid,
+                &records.volume_liquid,
+                nt,
+                dim,
+                species,
+            ),
+        }
+    }
+
+    fn get_spatial_average_biomass_concentration(&self) -> Result<Array1<f64>, String> {
+        let num_dimensions = self.results.main.records.dim.0;
+        let nt = self.results.main.records.time.len();
+        let volume =
+            vec_to_array_view2(&self.results.main.records.volume_liquid, nt, num_dimensions);
+        let vtot = volume.sum_axis(Axis(1));
+
+        let mut biomass_matrix = Array1::zeros(nt);
+
+        for i in 0..nt {
+            match self.get_properties("mass", i) {
+                Ok(m) => {
+                    biomass_matrix[i] = m.sum() / vtot[i];
+                }
+                Err(e) => {
+                    return Err(e);
+                }
             }
         }
+
+        Ok(self.results.main.initial.initial_weight * biomass_matrix)
     }
 
     fn get_time_average_concentration(
@@ -205,16 +212,14 @@ impl PostProcessUser for PostProcess {
     /// # Returns
     /// * `Result<Array2<f64>, String>` - A 2D array with biomass concentrations or an error message.
     fn get_biomass_concentration(&self) -> Result<Array2<f64>, String> {
-        let nt = self.results.main.records.time.len(); // Number of time steps
+        let nt: usize = self.results.main.records.time.len(); // Number of time steps
         let num_dimensions = self.results.main.records.dim.0; // Dimensionality
 
         // Initialize the biomass matrix
         let mut biomass_matrix = Array2::zeros((nt, num_dimensions));
 
         // Attempt to read model mass
-        if let Err(err) =
-            read_model_mass(self.results.get_files(), &mut biomass_matrix, nt)
-        {
+        if let Err(err) = read_model_mass(self.results.get_files(), &mut biomass_matrix, nt) {
             return Err(format!("Failed to read model mass: {:?}", err));
         }
 
@@ -223,7 +228,7 @@ impl PostProcessUser for PostProcess {
             vec_to_array_view2(&self.results.main.records.volume_liquid, nt, num_dimensions);
 
         // Calculate biomass concentration
-        biomass_matrix = self.results.main.initial.initial_weight * (biomass_matrix  / volume);
+        biomass_matrix = self.results.main.initial.initial_weight * (biomass_matrix / volume);
 
         Ok(biomass_matrix)
     }
@@ -326,5 +331,58 @@ impl PostProcessUser for PostProcess {
             Ok(res) => res.mean().ok_or("mean error".to_string()),
             Err(e) => Err(e.to_string()),
         }
+    }
+}
+
+impl ModelEstimator for PostProcess {
+    fn mu_direct(&self) -> Result<Array1<f64>, String> {
+        match self.weight() {
+            Weight::Single(_) => {
+                let nt = self.results.main.records.time.len();
+                let time = self.time();
+
+                let mu_functor = |i: usize, j: usize| {
+                    let mass_i = self.get_properties("mass", i).unwrap();
+                    let mass_mi = self.get_properties("mass", j).unwrap();
+                    let mass_tot_i = mass_i.sum();
+                    let dm: f64 = mass_i.sum() - mass_mi.sum();
+                    dm / (time[i] - time[j]) / mass_tot_i
+                };
+
+                let mut mu = Array1::zeros(nt);
+
+                mu[0] = mu_functor(1, 0); //Forward
+
+                for i in 1..nt - 1 {
+                    mu[i] = mu_functor(i + 1, i - 1); //Center
+                }
+                mu[nt - 1] = mu_functor(nt - 1, nt - 2); //Backward
+
+                Ok(mu)
+            }
+            Weight::Multiple(_) => todo!("Mu with different weight"),
+        }
+    }
+
+    fn estimate(&self, etype: Estimator, key: &str, i_export: usize) -> Result<f64, String> {
+        //calcule estimator in place is better
+        match self.get_properties(key, i_export) {
+            Ok(rx) => Ok(Self::_estimate(etype, self.weight(), &rx)),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn estimate_time(&self, etype: Estimator, key: &str) -> Result<Array1<f64>, String> {
+        let nt = self.results.main.records.time.len();
+        let mut estimator = Array1::<f64>::zeros(nt);
+        for i in 0..nt {
+            match self.estimate(etype, key, i) {
+                Ok(e) => estimator[i] = e,
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+        Ok(estimator)
     }
 }

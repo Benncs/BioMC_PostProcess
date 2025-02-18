@@ -1,4 +1,4 @@
-use bcore::{ConcatPostPrcess,PostProcessUser};
+use bcore::{ConcatPostPrcess,PostProcessReader};
 use ndarray::s;
 use plotly::ImageFormat;
 use plotly::{Layout, Plot, Scatter};
