@@ -7,12 +7,11 @@ members = [
 resolver = "2"
 
 [workspace.package]
+version = "0.3.3"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/Benncs/BioMC_PostProcess/"
 readme = "README.md"
-version = "0.3.3"
-edition = "2021"
 authors = ["Benjamin Casale"]
 description = "Post-Processing for Monte-Carlo simulation"
 categories = ["science"]

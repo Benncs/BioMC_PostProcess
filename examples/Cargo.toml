@@ -1,10 +1,9 @@
 [package]
 name = "examples"
+description = "Examples"
 edition.workspace = true
 version.workspace = true
 authors.workspace = true
-description.workspace = true
-documentation.workspace = true
 
 [dependencies]
 bcore = { path = "../core" }
