@@ -10,7 +10,7 @@ pub use datamodel::Weight;
 pub use impl_concat::ConcatPostPrcess;
 pub use impl_unique::PostProcess;
 
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+#[derive(Debug, thiserror::Error)]
 pub enum ApiError {
 
     #[error("Index {0:?} is Out of Range {1}")]
@@ -24,6 +24,9 @@ pub enum ApiError {
 
     #[error("Datasetd shape mismatch")]
     ShapeError,
+
+    #[error("Internal I/O error: {0}")]
+    Io(#[from] hdf5::Error),
 
     #[error("Error: {0}")]
     Default(String),

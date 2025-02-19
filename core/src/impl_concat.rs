@@ -10,18 +10,18 @@ pub struct ConcatPostPrcess {
 }
 
 impl ConcatPostPrcess {
-    pub fn new(folder: &[&str], root: Option<String>) -> Result<Self, String> {
+    pub fn new(folder: &[&str], root: Option<String>) -> Result<Self, ApiError> {
         if folder.len() > 1 {
             let dataset: Vec<PostProcess> = folder
                 .iter()
                 .map(|f| PostProcess::new(f, root.clone()))
                 .collect::<Result<Vec<_>, _>>()?; // Collect into a Result and propagate errors
             if dataset.is_empty() {
-                return Err("Need at least one file".to_string());
+                return Err(ApiError::Default("Need at least one file".to_string()));
             }
             Ok(Self { dataset })
         } else {
-            Err("Need at least one file".to_string())
+            Err(ApiError::Default("Need at least one file".to_string()))
         }
     }
 

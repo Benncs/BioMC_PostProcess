@@ -10,6 +10,8 @@ pub use _impl::{
     read_model_properties,
 };
 
+use crate::ApiError;
+
 trait ResultGroup<T> {
     fn read_g(&self) -> hdf5::Result<T>;
 }
@@ -17,30 +19,28 @@ trait ResultGroup<T> {
 #[derive(Debug)]
 pub struct Dim(pub usize, pub usize);
 
-
 #[derive(Debug)]
 pub enum Weight {
-    Single(f64),  // Represents a single f64 value
-    Multiple(Vec<f64>),  // Represents a vector of f64 values
+    Single(f64),        // Represents a single f64 value
+    Multiple(Vec<f64>), // Represents a vector of f64 values
 }
-
-
 
 #[derive(Debug)]
 pub struct Results {
     pub main: MainResult,
     pub files: Vec<String>,
     pub total_particle_repetition: Array2<f64>,
+    pub property_name: Vec<String>,
 }
 
 impl Results {
-    pub fn new(fp: &str, root: &str, folder: &str) -> Result<Self, String> {
+    pub fn new(fp: &str, root: &str, folder: &str) -> Result<Self, ApiError> {
         match MainResult::read(fp) {
             Ok(main) => {
                 let files: Vec<String> = (0..main.misc.n_rank)
                     .map(|i| format!("{}/{}/{}_partial_{}.h5", root, folder, folder, i))
                     .collect();
-                
+
                 let nt = main.records.time.len();
                 let shape = (nt, main.records.dim.0);
                 let mut total_particle_repetition: Array2<f64> = Array2::zeros(shape);
@@ -55,49 +55,44 @@ impl Results {
                         }
                     };
                 }
+                let property_name = Self::get_property_name(&files);
                 Ok(Results {
                     main,
                     files,
                     total_particle_repetition,
+                    property_name,
                 })
             }
-            Err(hdf5_error) => Err(hdf5_error.to_string()),
+            Err(hdf5_error) => Err(ApiError::Io(hdf5_error)),
         }
     }
 
-    pub fn get_property_name(&self) -> Vec<String> {
-        
-        
-        if let Ok(file) = hdf5::File::open(&self.files[0]){
-            if let Ok(group) = file.group("biological_model/0")
-            {
+    fn get_property_name(files: &[String]) -> Vec<String> {
+        if let Ok(file) = hdf5::File::open(files[0].clone()) {
+            if let Ok(group) = file.group("biological_model/0") {
                 let dataset_names: Vec<String> = group
-                .datasets().unwrap()
-                .into_iter().map(|d| PathBuf::from(d.name())
-                .file_name()
-                .and_then(|name| name.to_str())
-                .unwrap_or("")
-                .to_string())  // Extract the names of each dataset
-                .collect();
+                    .datasets()
+                    .unwrap()
+                    .into_iter()
+                    .map(|d| {
+                        PathBuf::from(d.name())
+                            .file_name()
+                            .and_then(|name| name.to_str())
+                            .unwrap_or("")
+                            .to_string()
+                    }) // Extract the names of each dataset
+                    .collect();
                 return dataset_names;
-
 
                 // .attr_names().unwrap()
                 // .into_iter().map(|g| g)  // Extract the names of each group
                 // .collect();
-        
             }
         }
         todo!()
-        
     }
 
-
-    
-
-
-    pub fn get_files(&self)->&[String]
-    {
+    pub fn get_files(&self) -> &[String] {
         &self.files
     }
 }

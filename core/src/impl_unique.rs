@@ -30,7 +30,7 @@ impl PostProcess {
     ///
     /// # Returns
     /// * `Result<Self, String>` - Returns the `PostProcess` instance or an error message if initialization fails.
-    pub fn new(folder: &str, root: Option<String>) -> Result<Self, String> {
+    pub fn new(folder: &str, root: Option<String>) -> Result<Self, ApiError> {
         let _root = root.unwrap_or_else(|| "./results/".to_string());
         let result_path = format!("{}/{}/{}.h5", _root, folder, folder);
         let main = Results::new(&result_path, &_root, folder)?;
@@ -53,7 +53,7 @@ impl PostProcessReader for PostProcess {
     }
 
     fn get_property_names(&self) -> Vec<String> {
-        self.results.get_property_name()
+        self.results.property_name.clone()
     }
 
     fn get_spatial_average_mtr(&self, species: usize) -> Result<Array1<f64>, ApiError> {
@@ -167,14 +167,8 @@ impl PostProcessReader for PostProcess {
         let mut biomass_matrix = Array1::zeros(nt);
 
         for i in 0..nt {
-            match self.get_properties("mass", i) {
-                Ok(m) => {
-                    biomass_matrix[i] = m.sum() / vtot[i];
-                }
-                Err(e) => {
-                    return Err(e);
-                }
-            }
+            let m = self.get_properties("mass", i)?;
+            biomass_matrix[i]= m.sum() / vtot[i];
         }
 
         Ok(self.results.main.initial.initial_weight * biomass_matrix)
@@ -218,12 +212,14 @@ impl PostProcessReader for PostProcess {
         // Initialize the biomass matrix
         let mut biomass_matrix = Array2::zeros((nt, num_dimensions));
 
+        if !self.results.property_name.iter().any(|x| x == "mass") {
+            return Err(ApiError::KeyError("mass".to_string()));
+        }
+
         // Attempt to read model mass
         if let Err(err) = read_model_mass(self.results.get_files(), &mut biomass_matrix, nt) {
-            return Err(ApiError::Default(format!(
-                "Failed to read model mass: {:?}",
-                err
-            )));
+            return Err(ApiError::Io(
+                err));
         }
 
         // Convert volume to an array view
@@ -268,10 +264,14 @@ impl PostProcessReader for PostProcess {
             ));
         }
 
+        if !self.results.property_name.iter().any(|x| x == key) {
+            return Err(ApiError::KeyError(key.to_string()));
+        }
+
         match read_model_properties(key, self.results.get_files(), i_export) {
             Ok(res) => Ok(res),
             // Err(e) => Err(format!("Failed to read model properties: {:?}", e)),
-            Err(_) => Err(ApiError::KeyError(key.to_owned())),
+            Err(e) => Err(ApiError::Io(e)),
         }
     }
 
@@ -283,12 +283,13 @@ impl PostProcessReader for PostProcess {
     /// # Returns
     /// * `Result<Array1<f64>, String>` - A 1D array of mean values over time or an error message.
     fn get_time_population_mean(&self, key: &str) -> Result<Array1<f64>, ApiError> {
+        if !self.results.property_name.iter().any(|x| x == key) {
+            return Err(ApiError::KeyError(key.to_string()));
+        }
+
         match read_avg_model_properties(key, self.results.get_files(), self.n_export()) {
             Ok(res) => Ok(res),
-            Err(e) => Err(ApiError::Default(format!(
-                "Failed to calculate time population mean for key '{}': {:?}",
-                key, e
-            ))),
+            Err(e) => Err(ApiError::Io(e)),
         }
     }
 
@@ -313,11 +314,15 @@ impl PostProcessReader for PostProcess {
         if i_export > self.n_export() {
             return Err(ApiError::OutOfRange(i_export, self.n_export()));
         }
-
+        if !self.results.property_name.iter().any(|x| x == key) {
+            return Err(ApiError::KeyError(key.to_string()));
+        }
         // let np = n_bins;//*self.results.total_particle_repetition.sum_axis(Axis(1)).last().unwrap() as usize;
         let mut hist = Histogram::new(n_bins);
 
-        let _ = make_histogram(self.results.get_files(), i_export, key, &mut hist);
+        if let Err(e) = make_histogram(self.results.get_files(), i_export, key, &mut hist) {
+            return Err(ApiError::Io(e));
+        }
 
         let b = hist.get_bins().to_vec();
         let c = hist.get_counts().to_vec();
@@ -332,39 +337,42 @@ impl PostProcessReader for PostProcess {
                 self.results.main.records.time.len(),
             ));
         }
+        if !self.results.property_name.iter().any(|x| x == key) {
+            return Err(ApiError::KeyError(key.to_string()));
+        }
 
         match read_model_properties(key, self.results.get_files(), i_export) {
             Ok(res) => res
                 .mean()
                 .ok_or(ApiError::Default("get_population_mean".to_string())),
-            Err(e) => Err(ApiError::Default(e.to_string())),
+            Err(e) => Err(ApiError::Io(e)),
         }
     }
 }
 
 impl ModelEstimator for PostProcess {
-    fn mu_direct(&self) -> Result<Array1<f64>, String> {
+    fn mu_direct(&self) -> Result<Array1<f64>, ApiError> {
         match self.weight() {
             Weight::Single(_) => {
                 let nt = self.results.main.records.time.len();
                 let time = self.time();
 
-                let mu_functor = |i: usize, j: usize| {
-                    let mass_i = self.get_properties("mass", i).unwrap();
-                    let mass_mi = self.get_properties("mass", j).unwrap();
+                let mu_functor = |i: usize, j: usize| -> Result<f64, ApiError> {
+                    let mass_i = self.get_properties("mass", i)?;
+                    let mass_mi = self.get_properties("mass", j)?;
                     let mass_tot_i = mass_i.sum();
                     let dm: f64 = mass_i.sum() - mass_mi.sum();
-                    dm / (time[i] - time[j]) / mass_tot_i
+                    Ok(dm / (time[i] - time[j]) / mass_tot_i)
                 };
 
                 let mut mu = Array1::zeros(nt);
 
-                mu[0] = mu_functor(1, 0); //Forward
+                mu[0] = mu_functor(1, 0)?; //Forward
 
                 for i in 1..nt - 1 {
-                    mu[i] = mu_functor(i + 1, i - 1); //Center
+                    mu[i] = mu_functor(i + 1, i - 1)?; //Center
                 }
-                mu[nt - 1] = mu_functor(nt - 1, nt - 2); //Backward
+                mu[nt - 1] = mu_functor(nt - 1, nt - 2)?; //Backward
 
                 Ok(mu)
             }
@@ -373,23 +381,14 @@ impl ModelEstimator for PostProcess {
     }
 
     fn estimate(&self, etype: Estimator, key: &str, i_export: usize) -> Result<f64, ApiError> {
-        //calcule estimator in place is better
-        match self.get_properties(key, i_export) {
-            Ok(rx) => Ok(crate::process::estimate(etype, self.weight(), &rx)),
-            Err(e) => Err(e),
-        }
+        crate::process::estimate(etype, self.weight(), &self.get_properties(key, i_export)?)
     }
 
     fn estimate_time(&self, etype: Estimator, key: &str) -> Result<Array1<f64>, ApiError> {
         let nt = self.results.main.records.time.len();
         let mut estimator = Array1::<f64>::zeros(nt);
         for i in 0..nt {
-            match self.estimate(etype, key, i) {
-                Ok(e) => estimator[i] = e,
-                Err(e) => {
-                    return Err(e);
-                }
-            }
+            estimator[i]=self.estimate(etype, key, i)?;
         }
         Ok(estimator)
     }

@@ -160,7 +160,7 @@ pub trait PostProcessReader {
 
 
 pub trait ModelEstimator {
-    fn mu_direct(&self) -> Result<Array1<f64>, String>;
+    fn mu_direct(&self) -> Result<Array1<f64>, ApiError>;
 
     fn estimate(&self, etype: Estimator, key: &str, i_export: usize) -> Result<f64, ApiError>;
 
@@ -179,7 +179,7 @@ mod tests {
         let weight = 2.0;
 
 
-        let result = crate::process::estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx);
+        let result = crate::process::estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx).unwrap();
         let dim = rx.dim();
         let weighted_estimator: f64 = (rx * weight).sum(); // (2.0*2.0 + 4.0*2.0 + 6.0*2.0) = 24.0
         let normalization_factor = (0..dim).map(|_| weight).sum::<f64>(); // 2.0 * 3 = 6.0
@@ -192,7 +192,7 @@ mod tests {
         let rx = Array1::from(vec![2.0, 4.0, 6.0]);
         let weight = 2.0;
 
-        let result = crate::process::estimate(Estimator::Weighted, &Weight::Single(weight), &rx);
+        let result = crate::process::estimate(Estimator::Weighted, &Weight::Single(weight), &rx).unwrap();
 
         let weighted_estimator: f64 = (rx * weight).sum(); // (2.0*2.0 + 4.0*2.0 + 6.0*2.0) = 24.0
         let expected_result = weighted_estimator; // Since it's weighted, it should return the weighted sum.
@@ -204,7 +204,7 @@ mod tests {
         let rx = Array1::from(vec![2.0, 4.0, 6.0]);
         let weight = 0.0;
 
-        let result = crate::process::estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx);
+        let result = crate::process::estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx).unwrap();
         assert_eq!(result, 0.0);
     }
 
@@ -212,7 +212,7 @@ mod tests {
     fn test_empty_array() {
         let rx = Array1::from(vec![]);
         let weight = 2.0;
-        let result = crate::process::estimate(Estimator::Weighted, &Weight::Single(weight), &rx);
+        let result = crate::process::estimate(Estimator::Weighted, &Weight::Single(weight), &rx).unwrap();
 
         // With an empty array, the result should be zero
         assert_eq!(result, 0.0);

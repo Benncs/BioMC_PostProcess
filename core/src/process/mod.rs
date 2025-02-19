@@ -1,4 +1,5 @@
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
+use crate::ApiError;
 use crate::Weight;
 use crate::Estimator;
 
@@ -90,14 +91,23 @@ impl Histogram {
     }
 }
 
-pub(crate) fn estimate(etype: Estimator, weight: &Weight, rx: &Array1<f64>) -> f64 {
+pub(crate) fn estimate(etype: Estimator, weight: &Weight, rx: &Array1<f64>) -> Result<f64,ApiError> {
+
+
+
+
     let weighted_estimator = match weight {
         Weight::Single(sw) => (rx * *sw).sum(),
-        Weight::Multiple(mw) => rx.iter().zip(mw).map(|(x, w)| x * w).sum(),
+        Weight::Multiple(mw) => {
+            if mw.len()!=rx.len()
+            {
+                return Err(ApiError::ShapeError);
+            }
+            rx.iter().zip(mw).map(|(x, w)| x * w).sum()},
     };
 
     if weighted_estimator == 0. {
-        return 0.;
+        return Ok(0.);
     }
     match etype {
         // Estimator::MonteCarlo => self
@@ -113,9 +123,9 @@ pub(crate) fn estimate(etype: Estimator, weight: &Weight, rx: &Array1<f64>) -> f
 
 
 
-            weighted_estimator / denum //Normalise
+            Ok(weighted_estimator / denum) //Normalise
         }
 
-        Estimator::Weighted => weighted_estimator,
+        Estimator::Weighted => Ok(weighted_estimator),
     }
 }
