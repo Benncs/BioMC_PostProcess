@@ -1,7 +1,6 @@
-use crate::api::{PostProcessReader};
-
+use crate::api::PostProcessReader;
 use crate::datamodel::Weight;
-use crate::{ApiError, Phase, PostProcess};
+use crate::{error::ApiError, api::Phase, PostProcess};
 use ndarray::{Array1, Array2, ArrayView3, Axis};
 
 #[derive(Debug)]

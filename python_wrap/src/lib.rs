@@ -1,5 +1,5 @@
 use bcore::api::ModelEstimator;
-use bcore::{ApiError, PostProcess, PostProcessReader};
+use bcore::{PostProcess, PostProcessReader};
 use numpy::PyArray2;
 use numpy::{PyArray1, PyArray3};
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
@@ -41,20 +41,20 @@ pub enum Phase {
     Gas,
 }
 
-impl From<Phase> for bcore::Phase {
+impl From<Phase> for bcore::api::Phase {
     fn from(val: Phase) -> Self {
         match val {
-            Phase::Liquid => bcore::Phase::Liquid,
-            Phase::Gas => bcore::Phase::Gas,
+            Phase::Liquid => bcore::api::Phase::Liquid,
+            Phase::Gas => bcore::api::Phase::Gas,
         }
     }
 }
 
-impl From<bcore::Phase> for Phase {
-    fn from(phase: bcore::Phase) -> Self {
+impl From<bcore::api::Phase> for Phase {
+    fn from(phase: bcore::api::Phase) -> Self {
         match phase {
-            bcore::Phase::Liquid => Phase::Liquid,
-            bcore::Phase::Gas => Phase::Gas,
+            bcore::api::Phase::Liquid => Phase::Liquid,
+            bcore::api::Phase::Gas => Phase::Gas,
         }
     }
 }
@@ -73,20 +73,20 @@ pub enum Estimator {
     Weighted,
 }
 
-impl From<Estimator> for bcore::Estimator {
+impl From<Estimator> for bcore::api::Estimator {
     fn from(val: Estimator) -> Self {
         match val {
-            Estimator::MonteCarlo => bcore::Estimator::MonteCarlo,
-            Estimator::Weighted => bcore::Estimator::Weighted,
+            Estimator::MonteCarlo => bcore::api::Estimator::MonteCarlo,
+            Estimator::Weighted => bcore::api::Estimator::Weighted,
         }
     }
 }
 
-impl From<bcore::Estimator> for Estimator {
-    fn from(phase: bcore::Estimator) -> Self {
+impl From<bcore::api::Estimator> for Estimator {
+    fn from(phase: bcore::api::Estimator) -> Self {
         match phase {
-            bcore::Estimator::MonteCarlo => Estimator::MonteCarlo,
-            bcore::Estimator::Weighted => Estimator::Weighted,
+            bcore::api::Estimator::MonteCarlo => Estimator::MonteCarlo,
+            bcore::api::Estimator::Weighted => Estimator::Weighted,
         }
     }
 }

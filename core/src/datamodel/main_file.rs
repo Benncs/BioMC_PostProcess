@@ -1,17 +1,20 @@
+//! Main file descriptor.
+//!
+//! Provides objects and methods to read the simulation's main file.
+//! The object hierarchy mimics the file's structure:
+
 
 use std::collections::HashMap;
-
 use super::{Dim, ResultGroup,Weight};
 
-
+///File's mics section 
 #[derive(Debug)]
 pub struct Misc {
     pub n_node_thread: u64,
     pub n_rank: u64,
 }
 
-
-
+///Time dependent scalar records  
 #[derive(Debug)]
 pub struct MainRecords {
     pub concentration_liquid: Vec<f64>,
@@ -23,6 +26,7 @@ pub struct MainRecords {
     pub time:Vec<f64>,
 }
 
+///Initial information   
 #[derive(Debug)]
 pub struct MainInitial {
     pub delta_time: f64,
@@ -35,12 +39,14 @@ pub struct MainInitial {
     pub t_per_flow_map: f64,
 }
 
+///Final information   
 #[derive(Debug)]
 pub struct MainFInal {
     pub events: HashMap<String, u64>,
     pub number_particles: u64,
 }
 
+///Object that stores data main file     
 #[derive(Debug)]
 pub struct MainResult {
     pub records: MainRecords,

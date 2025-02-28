@@ -5,7 +5,7 @@ use crate::datamodel::{
 };
 use crate::datamodel::{make_histogram, Results};
 use crate::process::{spatial_average_concentration, Histogram};
-use crate::{ApiError, Estimator, Phase};
+use crate::{api::Estimator, api::Phase, error::ApiError};
 use ndarray::{s, Array1, Array2, ArrayView3, Axis};
 
 /// The `PostProcess` struct handles post-processing of simulation results.
@@ -15,9 +15,6 @@ use ndarray::{s, Array1, Array2, ArrayView3, Axis};
 /// The struct uses the `Results` struct internally, which is expected to contain time and other data.
 #[derive(Debug)]
 pub struct PostProcess {
-    folder: String,   // The folder where the simulation results are stored.
-    root: String,     // The root directory for the results.
-    dest: String,     // The destination path for output
     results: Results, // The results of the simulation, which will be accessed for time and other data.
 }
 
@@ -34,12 +31,7 @@ impl PostProcess {
         let _root = root.unwrap_or_else(|| "./results/".to_string());
         let result_path = format!("{}/{}/{}.h5", _root, folder, folder);
         let main = Results::new(&result_path, &_root, folder)?;
-        Ok(Self {
-            folder: folder.to_string(),
-            root: _root,
-            dest: String::new(),
-            results: main,
-        })
+        Ok(Self { results: main })
     }
 }
 
@@ -168,7 +160,7 @@ impl PostProcessReader for PostProcess {
 
         for i in 0..nt {
             let m = self.get_properties("mass", i)?;
-            biomass_matrix[i]= m.sum() / vtot[i];
+            biomass_matrix[i] = m.sum() / vtot[i];
         }
 
         Ok(self.results.main.initial.initial_weight * biomass_matrix)
@@ -218,8 +210,7 @@ impl PostProcessReader for PostProcess {
 
         // Attempt to read model mass
         if let Err(err) = read_model_mass(self.results.get_files(), &mut biomass_matrix, nt) {
-            return Err(ApiError::Io(
-                err));
+            return Err(ApiError::Io(err));
         }
 
         // Convert volume to an array view
@@ -357,22 +348,23 @@ impl ModelEstimator for PostProcess {
                 let nt = self.results.main.records.time.len();
                 let time = self.time();
 
-                let mu_functor = |i: usize, j: usize| -> Result<f64, ApiError> {
+                let mu_functor = |i: usize, j: usize, im: usize| -> Result<f64, ApiError> {
                     let mass_i = self.get_properties("mass", i)?;
                     let mass_mi = self.get_properties("mass", j)?;
-                    let mass_tot_i = mass_i.sum();
+                    let mass_tot_i = self.get_properties("mass", im)?.sum();
                     let dm: f64 = mass_i.sum() - mass_mi.sum();
-                    Ok(dm / (time[i] - time[j]) / mass_tot_i)
+                    let dt = time[i] - time[j];
+                    Ok(dm / dt / mass_tot_i)
                 };
 
                 let mut mu = Array1::zeros(nt);
 
-                mu[0] = mu_functor(1, 0)?; //Forward
+                mu[0] = mu_functor(1, 0, 0)?; //Forward
 
                 for i in 1..nt - 1 {
-                    mu[i] = mu_functor(i + 1, i - 1)?; //Center
+                    mu[i] = mu_functor(i + 1, i - 1, i)?; //Center
                 }
-                mu[nt - 1] = mu_functor(nt - 1, nt - 2)?; //Backward
+                mu[nt - 1] = mu_functor(nt - 1, nt - 2, nt - 1)?; //Backward
 
                 Ok(mu)
             }
@@ -388,7 +380,7 @@ impl ModelEstimator for PostProcess {
         let nt = self.results.main.records.time.len();
         let mut estimator = Array1::<f64>::zeros(nt);
         for i in 0..nt {
-            estimator[i]=self.estimate(etype, key, i)?;
+            estimator[i] = self.estimate(etype, key, i)?;
         }
         Ok(estimator)
     }

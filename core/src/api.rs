@@ -1,6 +1,22 @@
-use crate::{datamodel::Weight, Estimator};
-use crate::{ApiError, Phase};
+use crate::datamodel::Weight;
+use crate::error::ApiError;
 use ndarray::{Array1, Array2, ArrayView3};
+
+
+/// `Phase` enum represents different states or phases of a substance.
+#[derive(Clone, PartialEq, Copy)]
+pub enum Phase {
+    Liquid,
+    Gas,
+}
+
+/// Type of estimator to retrieve data from MC Particle  
+#[derive(Copy, Clone)]
+pub enum Estimator {
+    MonteCarlo,
+    Weighted,
+}
+
 
 /// A trait for postprocessing operations on simulation results.
 ///

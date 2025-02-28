@@ -1,16 +1,13 @@
 mod _impl;
 mod main_file;
-use std::path::PathBuf;
-
-pub use main_file::MainResult;
-use ndarray::{Array2, ArrayView2, ArrayView3};
-
+use crate::error::ApiError;
 pub use _impl::{
     get_n_export_real, make_histogram, read_avg_model_properties, read_model_mass,
     read_model_properties,
 };
-
-use crate::ApiError;
+pub use main_file::MainResult;
+use ndarray::{Array2, ArrayView2, ArrayView3};
+use std::path::PathBuf;
 
 trait ResultGroup<T> {
     fn read_g(&self) -> hdf5::Result<T>;
@@ -45,15 +42,9 @@ impl Results {
                 let shape = (nt, main.records.dim.0);
                 let mut total_particle_repetition: Array2<f64> = Array2::zeros(shape);
                 for i_f in &files {
-                    match _impl::read_number_particle(i_f) {
-                        Ok(result) => {
-                            total_particle_repetition = total_particle_repetition
-                                + Array2::from_shape_vec(shape, result).unwrap();
-                        }
-                        Err(e) => {
-                            panic!("Error reading number of particles: {:?}", e);
-                        }
-                    };
+                    let n_p = _impl::read_number_particle(i_f)?;
+                    total_particle_repetition =
+                        total_particle_repetition + Array2::from_shape_vec(shape, n_p).unwrap();
                 }
                 let property_name = Self::get_property_name(&files);
                 Ok(Results {
@@ -97,12 +88,12 @@ impl Results {
     }
 }
 
-pub fn vec_to_array_view2<'a>(vec: &'a Vec<f64>, nr: usize, nc: usize) -> ArrayView2<'a, f64> {
+pub fn vec_to_array_view2(vec: &[f64], nr: usize, nc: usize) -> ArrayView2<'_, f64> {
     assert_eq!(vec.len(), nr * nc, "Vector size must match dimensions.");
     ArrayView2::from_shape((nr, nc), vec).expect("Failed to create ArrayView2")
 }
 
-pub fn vec_to_array_view3<'a>(vec: &'a Vec<f64>, dim: &'a Dim, nt: usize) -> ArrayView3<'a, f64> {
+pub fn vec_to_array_view3<'a>(vec: &'a [f64], dim: &'a Dim, nt: usize) -> ArrayView3<'a,f64> {
     assert_eq!(
         vec.len(),
         nt * dim.0 * dim.1,

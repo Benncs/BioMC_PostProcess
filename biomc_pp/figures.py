@@ -6,16 +6,17 @@ import numpy as np
 
 
 def plt_hist(n, c, ax=None, **kwargs):
+    c = c[:-1]
     if kwargs.get("density", False):
         c = c / (sum(c) * np.diff(n))  # Normalize bin heights
         kwargs.pop("density")
 
     if ax is None:
         fig, ax1 = plt.subplots()
-        ax1.bar(n[:-1], c[:-1], width=np.diff(n), **kwargs)
+        ax1.bar(n[:-1], c, width=np.diff(n), **kwargs)
         return fig, ax1
     else:
-        ax.bar(n[:-1], c[:-1], width=np.diff(n), **kwargs)
+        ax.bar(n[:-1], c, width=np.diff(n), **kwargs)
         return ax
 
 

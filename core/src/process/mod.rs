@@ -1,7 +1,7 @@
-use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
-use crate::ApiError;
+use crate::api::Estimator;
+use crate::error::ApiError;
 use crate::Weight;
-use crate::Estimator;
+use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
 
 pub fn spatial_average_concentration(
     concentration_record: &ArrayView2<f64>,
@@ -91,19 +91,19 @@ impl Histogram {
     }
 }
 
-pub(crate) fn estimate(etype: Estimator, weight: &Weight, rx: &Array1<f64>) -> Result<f64,ApiError> {
-
-
-
-
+pub(crate) fn estimate(
+    etype: Estimator,
+    weight: &Weight,
+    rx: &Array1<f64>,
+) -> Result<f64, ApiError> {
     let weighted_estimator = match weight {
         Weight::Single(sw) => (rx * *sw).sum(),
         Weight::Multiple(mw) => {
-            if mw.len()!=rx.len()
-            {
+            if mw.len() != rx.len() {
                 return Err(ApiError::ShapeError);
             }
-            rx.iter().zip(mw).map(|(x, w)| x * w).sum()},
+            rx.iter().zip(mw).map(|(x, w)| x * w).sum()
+        }
     };
 
     if weighted_estimator == 0. {
@@ -115,13 +115,10 @@ pub(crate) fn estimate(etype: Estimator, weight: &Weight, rx: &Array1<f64>) -> R
         //     .map(|x| x.sum() / (x.len() as f64))
         //     .unwrap_or(0.),
         Estimator::MonteCarlo => {
-
             let denum = match weight {
-                Weight::Single(sw) => (rx.dim() as f64)**sw,
+                Weight::Single(sw) => (rx.dim() as f64) * *sw,
                 Weight::Multiple(mw) => mw.iter().sum(),
             };
-
-
 
             Ok(weighted_estimator / denum) //Normalise
         }
