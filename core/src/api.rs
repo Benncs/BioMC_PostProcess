@@ -1,7 +1,6 @@
-use crate::datamodel::Weight;
+use crate::datamodel::{Tallies, Weight};
 use crate::error::ApiError;
 use ndarray::{Array1, Array2, ArrayView3};
-
 
 /// `Phase` enum represents different states or phases of a substance.
 #[derive(Clone, PartialEq, Copy)]
@@ -10,13 +9,12 @@ pub enum Phase {
     Gas,
 }
 
-/// Type of estimator to retrieve data from MC Particle  
+/// Type of estimator to retrieve data from MC Particle
 #[derive(Copy, Clone)]
 pub enum Estimator {
     MonteCarlo,
     Weighted,
 }
-
 
 /// A trait for postprocessing operations on simulation results.
 ///
@@ -29,6 +27,8 @@ pub trait PostProcessReader {
     fn time(&self) -> &[f64];
 
     fn weight(&self) -> &Weight;
+
+    fn tailles(&self) -> Option<&Tallies>;
 
     /// Returns a 1D array view of the time data from the simulation results.
     ///
@@ -173,15 +173,12 @@ pub trait PostProcessReader {
     fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, ApiError>;
 }
 
-
-
 pub trait ModelEstimator {
     fn mu_direct(&self) -> Result<Array1<f64>, ApiError>;
 
     fn estimate(&self, etype: Estimator, key: &str, i_export: usize) -> Result<f64, ApiError>;
 
     fn estimate_time(&self, etype: Estimator, key: &str) -> Result<Array1<f64>, ApiError>;
-
 }
 
 #[cfg(test)]
@@ -194,8 +191,8 @@ mod tests {
         let rx = Array1::from(vec![2.0, 4.0, 6.0]);
         let weight = 2.0;
 
-
-        let result = crate::process::estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx).unwrap();
+        let result =
+            crate::process::estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx).unwrap();
         let dim = rx.dim();
         let weighted_estimator: f64 = (rx * weight).sum(); // (2.0*2.0 + 4.0*2.0 + 6.0*2.0) = 24.0
         let normalization_factor = (0..dim).map(|_| weight).sum::<f64>(); // 2.0 * 3 = 6.0
@@ -208,7 +205,8 @@ mod tests {
         let rx = Array1::from(vec![2.0, 4.0, 6.0]);
         let weight = 2.0;
 
-        let result = crate::process::estimate(Estimator::Weighted, &Weight::Single(weight), &rx).unwrap();
+        let result =
+            crate::process::estimate(Estimator::Weighted, &Weight::Single(weight), &rx).unwrap();
 
         let weighted_estimator: f64 = (rx * weight).sum(); // (2.0*2.0 + 4.0*2.0 + 6.0*2.0) = 24.0
         let expected_result = weighted_estimator; // Since it's weighted, it should return the weighted sum.
@@ -220,7 +218,8 @@ mod tests {
         let rx = Array1::from(vec![2.0, 4.0, 6.0]);
         let weight = 0.0;
 
-        let result = crate::process::estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx).unwrap();
+        let result =
+            crate::process::estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx).unwrap();
         assert_eq!(result, 0.0);
     }
 
@@ -228,7 +227,8 @@ mod tests {
     fn test_empty_array() {
         let rx = Array1::from(vec![]);
         let weight = 2.0;
-        let result = crate::process::estimate(Estimator::Weighted, &Weight::Single(weight), &rx).unwrap();
+        let result =
+            crate::process::estimate(Estimator::Weighted, &Weight::Single(weight), &rx).unwrap();
 
         // With an empty array, the result should be zero
         assert_eq!(result, 0.0);

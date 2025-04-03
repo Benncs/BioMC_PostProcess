@@ -5,7 +5,7 @@ pub use _impl::{
     get_n_export_real, make_histogram, read_avg_model_properties, read_model_mass,
     read_model_properties,
 };
-pub use main_file::MainResult;
+pub use main_file::{MainResult, Tallies};
 use ndarray::{Array2, ArrayView2, ArrayView3};
 use std::path::PathBuf;
 
@@ -93,7 +93,7 @@ pub fn vec_to_array_view2(vec: &[f64], nr: usize, nc: usize) -> ArrayView2<'_, f
     ArrayView2::from_shape((nr, nc), vec).expect("Failed to create ArrayView2")
 }
 
-pub fn vec_to_array_view3<'a>(vec: &'a [f64], dim: &'a Dim, nt: usize) -> ArrayView3<'a,f64> {
+pub fn vec_to_array_view3<'a>(vec: &'a [f64], dim: &'a Dim, nt: usize) -> ArrayView3<'a, f64> {
     assert_eq!(
         vec.len(),
         nt * dim.0 * dim.1,

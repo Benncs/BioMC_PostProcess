@@ -1,6 +1,6 @@
 use crate::api::PostProcessReader;
-use crate::datamodel::Weight;
-use crate::{error::ApiError, api::Phase, PostProcess};
+use crate::datamodel::{Tallies, Weight};
+use crate::{api::Phase, error::ApiError, PostProcess};
 use ndarray::{Array1, Array2, ArrayView3, Axis};
 
 #[derive(Debug)]
@@ -194,6 +194,9 @@ impl PostProcessReader for ConcatPostPrcess {
     }
 
     fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, ApiError> {
+        todo!()
+    }
+    fn tailles(&self) -> Option<&Tallies> {
         todo!()
     }
 }
