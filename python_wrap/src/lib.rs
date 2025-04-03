@@ -329,6 +329,25 @@ impl PythonPostProcess {
             Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e.to_string())),
         }
     }
+
+    pub fn get_csv_tallies(&self, py: Python<'_>)->PyResult<String>
+    {
+        match self.inner.tallies() {
+            Some(e) => Ok(e.to_csv().unwrap()),
+            None=> Err(PyErr::new::<PyRuntimeError, _>("No data")),
+        }
+    }
+
+    fn get_tallies(&self, py: Python<'_>) -> Py<PyArray2<f64>> {
+        match self.inner.tallies() {
+            Some(e) => 
+            {
+                let v = e.to_array().to_owned();
+                PyArray2::from_owned_array(py, v).unbind()
+            }
+            None => panic!("No data"),
+        }
+    }
 }
 
 #[pymodule]

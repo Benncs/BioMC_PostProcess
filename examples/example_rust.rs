@@ -33,7 +33,7 @@ fn main() {
 
         println!(
             "{}",
-            obj.tailles().expect("REASON").to_csv().expect("REASE")
+            obj.tallies().expect("REASON").to_csv().expect("REASE")
         );
     } else {
         println!("Simulation not found");

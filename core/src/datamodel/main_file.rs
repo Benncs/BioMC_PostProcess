@@ -3,11 +3,9 @@
 //! Provides objects and methods to read the simulation's main file.
 //! The object hierarchy mimics the file's structure:
 
-use super::{Dim, ResultGroup, Weight};
-use csv::Writer;
-use serde::{Deserialize, Serialize};
-use serde_json;
+use super::{tallies::Tallies, Dim, ResultGroup, Weight};
 use std::collections::HashMap;
+use ndarray::{ArrayView2};
 ///File's mics section
 #[derive(Debug)]
 pub struct Misc {
@@ -15,45 +13,7 @@ pub struct Misc {
     pub n_rank: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Tallies(pub Vec<f64>);
 
-impl Tallies {
-    pub fn validate(&self) -> bool {
-        self.0.len() % 6 == 0
-    }
-
-    pub fn to_json(&self) -> serde_json::Result<String> {
-        serde_json::to_string_pretty(&self.0)
-    }
-
-    pub fn to_csv(&self) -> Result<String, String> {
-        if !self.validate() {
-            return Err(
-                "Validation failed: The number of elements is not divisible by 6.".to_string(),
-            );
-        }
-
-        let headers = vec![
-            "NewParticle",
-            "Death",
-            "Move",
-            "Exit",
-            "Overflow",
-            "ChangeWeight",
-        ];
-        let mut wtr = Writer::from_writer(vec![]);
-
-        wtr.write_record(&headers).map_err(|e| e.to_string())?;
-
-        for row in self.0.chunks(6) {
-            wtr.serialize(row).map_err(|e| e.to_string())?;
-        }
-        let data = String::from_utf8(wtr.into_inner().map_err(|e| e.to_string())?)
-            .map_err(|e| e.to_string())?;
-        Ok(data)
-    }
-}
 
 ///Time dependent scalar records
 #[derive(Debug)]

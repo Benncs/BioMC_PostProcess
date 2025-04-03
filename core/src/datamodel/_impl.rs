@@ -1,6 +1,7 @@
 use crate::process::Histogram;
 
-use super::main_file::{MainFInal, MainInitial, MainRecords, Misc, Tallies};
+use super::main_file::{MainFInal, MainInitial, MainRecords, Misc};
+use super::tallies::Tallies;
 use super::{Dim, ResultGroup};
 use hdf5::Group;
 use ndarray::{s, Array1, Array2, ArrayView1};

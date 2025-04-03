@@ -1,11 +1,12 @@
 mod _impl;
 mod main_file;
+pub mod tallies;
 use crate::error::ApiError;
 pub use _impl::{
     get_n_export_real, make_histogram, read_avg_model_properties, read_model_mass,
     read_model_properties,
 };
-pub use main_file::{MainResult, Tallies};
+pub use main_file::MainResult;
 use ndarray::{Array2, ArrayView2, ArrayView3};
 use std::path::PathBuf;
 

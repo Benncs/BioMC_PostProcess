@@ -1,4 +1,5 @@
-use crate::datamodel::{Tallies, Weight};
+use crate::datamodel::{Weight,tallies::Tallies};
+
 use crate::error::ApiError;
 use ndarray::{Array1, Array2, ArrayView3};
 
@@ -28,7 +29,7 @@ pub trait PostProcessReader {
 
     fn weight(&self) -> &Weight;
 
-    fn tailles(&self) -> Option<&Tallies>;
+    fn tallies(&self) -> Option<&Tallies>;
 
     /// Returns a 1D array view of the time data from the simulation results.
     ///

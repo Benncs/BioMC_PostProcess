@@ -1,7 +1,7 @@
 use crate::api::{ModelEstimator, PostProcessReader};
 use crate::datamodel::{
     get_n_export_real, read_avg_model_properties, read_model_mass, read_model_properties,
-    vec_to_array_view2, vec_to_array_view3, Dim, Tallies, Weight,
+    vec_to_array_view2, vec_to_array_view3, Dim, tallies::Tallies, Weight,
 };
 use crate::datamodel::{make_histogram, Results};
 use crate::process::{spatial_average_concentration, Histogram};
@@ -339,7 +339,7 @@ impl PostProcessReader for PostProcess {
             Err(e) => Err(ApiError::Io(e)),
         }
     }
-    fn tailles(&self) -> Option<&Tallies> {
+    fn tallies(&self) -> Option<&Tallies> {
         self.results.main.records.tallies.as_ref()
     }
 }
