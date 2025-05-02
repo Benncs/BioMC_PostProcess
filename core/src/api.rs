@@ -27,8 +27,16 @@ pub trait PostProcessReader {
     /// * `&[f64]` - A slice containing the time data.
     fn time(&self) -> &[f64];
 
+    /// Returns a weight chosen for simulation 
+    ///
+    /// # Returns
+    /// * `Weight object: Can contain either float (unique weight) or vector of weight (non implemented yet)
     fn weight(&self) -> &Weight;
 
+    // Returns tallies if exported during simulation 
+    ///
+    /// # Returns
+    /// * `Option<&Tallies>: Some if tallies exported 
     fn tallies(&self) -> Option<&Tallies>;
 
     /// Returns a 1D array view of the time data from the simulation results.
@@ -53,7 +61,11 @@ pub trait PostProcessReader {
     /// # Returns
     /// * `usize` - The total number of export events.
     fn n_export(&self) -> usize;
-
+    
+    /// Returns model's property names  
+    ///
+    /// # Returns
+    /// * `Vec<String>: Names, empty if no exported names  
     fn get_property_names(&self) -> Vec<String>;
 
     /// Computes the spatial average concentration for a specific species and phase.

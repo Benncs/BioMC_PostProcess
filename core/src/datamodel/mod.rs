@@ -97,24 +97,6 @@ pub fn f_get_probes(files: &[String]) -> Result<Array1<f64>, ApiError> {
 
     for filename in files.iter() {
         let file = hdf5::File::open(filename)?;
-        // if let Ok(dataset) = file.dataset("probes") {
-        //     let temp_array: Vec<f64> = match dataset.read_raw::<f64>() {
-        //         Ok(data) => data,
-        //         Err(_) => return None,
-        //     };
-
-        //     let tmp_array = match ArrayView1::from_shape(temp_array.len(), &temp_array) {
-        //         Ok(view) => view,
-        //         Err(_) => return None,
-        //     };
-
-        //     probe
-        //         .slice_mut(s![offset..offset + temp_array.len()])
-        //         .assign(&tmp_array);
-        //     offset += temp_array.len();
-        // } else {
-        //     return None;
-        // }
         let dataset = file.dataset("probes")?;
         let temp_array: Vec<f64> = dataset.read_raw::<f64>()?;
         let tmp_array = match ArrayView1::from_shape(temp_array.len(), &temp_array) {

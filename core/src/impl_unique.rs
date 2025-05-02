@@ -169,7 +169,7 @@ impl PostProcessReader for PostProcess {
     fn get_time_average_concentration(
         &self,
         species: usize,
-        position: usize,
+        position: usize, 
         phase: Phase,
     ) -> Result<Array1<f64>, ApiError> {
         let r = &self.results.main.records;
@@ -193,6 +193,7 @@ impl PostProcessReader for PostProcess {
         }
     }
 
+    //Actually compute spatial average property cannot be use to follow distribution  
     fn get_spatial_average_property(&self, key:&str) ->  Result<Array2<f64>, ApiError>
     {
         let nt: usize = self.results.main.records.time.len(); // Number of time steps
