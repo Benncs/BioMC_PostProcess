@@ -67,7 +67,7 @@ pub fn read_spatial_model_properties(
     files: &[String],
     cx: &mut Array2<f64>,
     n_export: usize,
-) -> hdf5::Result<()> {
+) -> Result<(), ApiError> {
     for filename in files.iter() {
         // Open the HDF5 file in read mode
         let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
@@ -230,7 +230,7 @@ pub fn read_model_mass(
     files: &[String],
     cx: &mut Array2<f64>,
     n_export: usize,
-) -> hdf5::Result<()> {
+) -> Result<(), ApiError> {
     read_spatial_model_properties("mass", files, cx, n_export)
 }
 

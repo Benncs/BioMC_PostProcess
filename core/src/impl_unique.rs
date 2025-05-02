@@ -206,10 +206,8 @@ impl PostProcessReader for PostProcess {
             return Err(ApiError::KeyError(key.to_string()));
         }
 
-        // Attempt to read model mass
-        if let Err(err) = read_spatial_model_properties(key,self.results.get_files(), &mut biomass_matrix, nt) {
-            return Err(ApiError::Io(err));
-        }
+        read_spatial_model_properties(key,self.results.get_files(), &mut biomass_matrix, nt) ?;
+     
 
 
         // Calculate biomass concentration
@@ -239,9 +237,7 @@ impl PostProcessReader for PostProcess {
         }
 
         // Attempt to read model mass
-        if let Err(err) = read_model_mass(self.results.get_files(), &mut biomass_matrix, nt) {
-            return Err(ApiError::Io(err));
-        }
+        read_model_mass(self.results.get_files(), &mut biomass_matrix, nt)?;
 
         // Convert volume to an array view
         let volume =
