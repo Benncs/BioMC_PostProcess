@@ -47,6 +47,11 @@ impl PostProcessReader for ConcatPostPrcess {
         todo!()
     }
 
+    fn get_spatial_average_property(&self, key:&str) ->  Result<Array2<f64>, ApiError>
+    {
+        todo!()
+    }
+
     fn get_concentrations(&self, phase: Phase) -> ArrayView3<f64> {
         todo!()
     }
@@ -62,6 +67,11 @@ impl PostProcessReader for ConcatPostPrcess {
             }
         }
         Ok(concatenated)
+    }
+
+    fn get_probes(&self) -> Result<Array1<f64>, ApiError>
+    {
+        todo!();
     }
 
     fn get_property_names(&self) -> Vec<String> {

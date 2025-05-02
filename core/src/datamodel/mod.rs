@@ -2,12 +2,13 @@ mod _impl;
 mod main_file;
 pub mod tallies;
 use crate::error::ApiError;
+use _impl::get_probe_size;
 pub use _impl::{
     get_n_export_real, make_histogram, read_avg_model_properties, read_model_mass,
-    read_model_properties,
+    read_model_properties, read_spatial_model_properties,
 };
 pub use main_file::MainResult;
-use ndarray::{Array2, ArrayView2, ArrayView3};
+use ndarray::{s, Array1, Array2, ArrayView1, ArrayView2, ArrayView3};
 use std::path::PathBuf;
 
 trait ResultGroup<T> {
@@ -81,12 +82,52 @@ impl Results {
                 // .collect();
             }
         }
-        todo!()
+        vec![] //Let say is normal behaviour to return empty vector if there is no properties instead
     }
 
     pub fn get_files(&self) -> &[String] {
         &self.files
     }
+}
+
+pub fn f_get_probes(files: &[String]) -> Result<Array1<f64>, ApiError> {
+    let total_size = get_probe_size(files)?;
+    let mut probe = Array1::zeros(total_size);
+    let mut offset = 0;
+
+    for filename in files.iter() {
+        let file = hdf5::File::open(filename)?;
+        // if let Ok(dataset) = file.dataset("probes") {
+        //     let temp_array: Vec<f64> = match dataset.read_raw::<f64>() {
+        //         Ok(data) => data,
+        //         Err(_) => return None,
+        //     };
+
+        //     let tmp_array = match ArrayView1::from_shape(temp_array.len(), &temp_array) {
+        //         Ok(view) => view,
+        //         Err(_) => return None,
+        //     };
+
+        //     probe
+        //         .slice_mut(s![offset..offset + temp_array.len()])
+        //         .assign(&tmp_array);
+        //     offset += temp_array.len();
+        // } else {
+        //     return None;
+        // }
+        let dataset = file.dataset("probes")?;
+        let temp_array: Vec<f64> = dataset.read_raw::<f64>()?;
+        let tmp_array = match ArrayView1::from_shape(temp_array.len(), &temp_array) {
+            Ok(view) => view,
+            Err(_) => return Err(ApiError::ShapeError),
+        };
+        probe
+            .slice_mut(s![offset..offset + temp_array.len()])
+            .assign(&tmp_array);
+        offset += temp_array.len();
+    }
+
+    Ok(probe)
 }
 
 pub fn vec_to_array_view2(vec: &[f64], nr: usize, nc: usize) -> ArrayView2<'_, f64> {

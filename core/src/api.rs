@@ -66,6 +66,8 @@ pub trait PostProcessReader {
     /// * `Array1<f64>` - A 1D array containing the spatial average concentrations over time.
     fn get_spatial_average_concentration(&self, species: usize, phase: Phase) -> Array1<f64>;
 
+    fn get_spatial_average_property(&self, key:&str) ->  Result<Array2<f64>, ApiError>;
+
     fn get_spatial_average_biomass_concentration(&self) -> Result<Array1<f64>, ApiError>;
 
     fn get_concentrations(&self, phase: Phase) -> ArrayView3<f64>;
@@ -95,6 +97,9 @@ pub trait PostProcessReader {
     /// * `Result<Array2<f64>, String>` - A 2D array containing biomass concentrations over time,
     ///   or an error message if the calculation fails.
     fn get_biomass_concentration(&self) -> Result<Array2<f64>, ApiError>;
+
+    fn get_probes(&self) -> Result<Array1<f64>, ApiError>;
+    
 
     /// Calculates the total growth in number.
     ///

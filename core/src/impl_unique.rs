@@ -3,7 +3,7 @@ use crate::datamodel::{
     get_n_export_real, read_avg_model_properties, read_model_mass, read_model_properties,
     vec_to_array_view2, vec_to_array_view3, Dim, tallies::Tallies, Weight,
 };
-use crate::datamodel::{make_histogram, Results};
+use crate::datamodel::{f_get_probes, make_histogram, read_spatial_model_properties, Results};
 use crate::process::{spatial_average_concentration, Histogram};
 use crate::{api::Estimator, api::Phase, error::ApiError};
 use ndarray::{s, Array1, Array2, ArrayView3, Axis};
@@ -191,6 +191,35 @@ impl PostProcessReader for PostProcess {
                 Err(ApiError::RecordsError("Gas".to_string()))
             }
         }
+    }
+
+    fn get_spatial_average_property(&self, key:&str) ->  Result<Array2<f64>, ApiError>
+    {
+        let nt: usize = self.results.main.records.time.len(); // Number of time steps
+        let num_dimensions = self.results.main.records.dim.0; // Dimensionality
+
+        // Initialize the biomass matrix
+        let mut biomass_matrix = Array2::zeros((nt, num_dimensions));
+
+        if !self.results.property_name.iter().any(|x| x == key) {
+            return Err(ApiError::KeyError(key.to_string()));
+        }
+
+        // Attempt to read model mass
+        if let Err(err) = read_spatial_model_properties(key,self.results.get_files(), &mut biomass_matrix, nt) {
+            return Err(ApiError::Io(err));
+        }
+
+
+        // Calculate biomass concentration
+        biomass_matrix /= self.get_number_particle();
+
+        Ok(biomass_matrix)
+    }
+
+    fn get_probes(&self) -> Result<Array1<f64>, ApiError>
+    {
+        f_get_probes(&self.results.files)
     }
 
     /// Calculates the biomass concentration over time for the simulation.

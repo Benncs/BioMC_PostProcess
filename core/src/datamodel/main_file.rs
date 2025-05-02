@@ -53,7 +53,7 @@ pub struct MainFInal {
 pub struct MainResult {
     pub records: MainRecords,
     pub initial: MainInitial,
-    pub cfinal: MainFInal,
+    pub cfinal: Option<MainFInal>, //TODO Add runtime parameter to throw error or not when missing
     pub misc: Misc,
     pub weight: Weight,
 }
@@ -71,8 +71,11 @@ impl MainResult {
         let m_ds = file.group("records")?;
         let records = ResultGroup::<MainRecords>::read_g(&m_ds)?;
 
-        let m_ds = file.group("final_result")?;
-        let cfinal = ResultGroup::<MainFInal>::read_g(&m_ds)?;
+        let mut cfinal = None;
+        if let Ok(m_ds) = file.group("final_result")
+        {
+            cfinal= Some(ResultGroup::<MainFInal>::read_g(&m_ds)?);
+        }
 
         let weight = Weight::Single(initial.initial_weight); //TODO switch between single and multi weight
 

@@ -13,7 +13,7 @@ classifiers = [
 dynamic = ["version"]
 dependencies = [
     "numpy>=2.2.0",
-    "matplotlib"
+    "matplotlib>=3.10"
 ]
 
 [project.optional-dependencies]

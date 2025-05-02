@@ -1,3 +1,4 @@
+use crate::error::ApiError;
 use crate::process::Histogram;
 
 use super::main_file::{MainFInal, MainInitial, MainRecords, Misc};
@@ -61,7 +62,7 @@ pub fn read_number_particle(filename: &str) -> hdf5::Result<Vec<f64>> {
     Ok(v)
 }
 
-fn read_spatial_model_properties(
+pub fn read_spatial_model_properties(
     key: &str,
     files: &[String],
     cx: &mut Array2<f64>,
@@ -100,6 +101,23 @@ fn read_spatial_model_properties(
         }
     }
     Ok(())
+}
+
+pub fn get_probe_size(files: &[String])-> Result<usize,ApiError>
+{
+    let mut probe_size = 0;
+    for filename in files.iter() {
+        let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
+        if let Ok(dataset) = file.dataset("probes")
+        {
+            probe_size += dataset.size();
+        }
+        else {
+            return Err(ApiError::Default("No Probes in dataset".to_string()));
+        }
+        
+    }
+    Ok(probe_size)
 }
 
 pub fn read_model_properties(

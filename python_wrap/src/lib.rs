@@ -122,11 +122,18 @@ impl PythonPostProcess {
     #[new]
     #[pyo3(signature = (folder, root=None))]
     fn new(folder: &str, root: Option<String>) -> PyResult<Self> {
-        if let Ok(pp) = PostProcess::new(folder, root) {
-            return Ok(Self { inner: pp });
-        }
+        // if let Ok(pp) = PostProcess::new(folder, root) {
+        //     return Ok(Self { inner: pp });
+        // }
 
-        Err(PyValueError::new_err("Error creating object"))
+    
+        match PostProcess::new(folder, root) 
+        {
+            Ok(pp) => {Ok(Self { inner: pp })},
+            Err(err)=>{
+                println!("{:?}",err);
+                Err(PyValueError::new_err("Error creating object"))}
+        }
     }
 
     fn get_property_names(&self) -> PyResult<Vec<String>> {
@@ -230,9 +237,12 @@ impl PythonPostProcess {
         panic!("")
     }
 
-    fn get_spatial_property(&self, name: &str) -> PyResult<PyObject> {
+    fn get_spatial_property(&self, py: Python<'_>,name: &str) -> Py<PyArray2<f64>>{
         // TODO
-        Python::with_gil(|py| Ok(PyList::empty(py).to_object(py)))
+        match self.inner.get_spatial_average_property(name) {
+            Ok(e) => PyArray2::from_owned_array(py, e).unbind(),
+            Err(e) => panic!("{}", e),
+        }
     }
 
     fn get_biomass_concentration(&self, py: Python<'_>) -> Py<PyArray2<f64>> {
@@ -254,9 +264,13 @@ impl PythonPostProcess {
         PyArray2::from_owned_array(py, e).unbind()
     }
 
-    fn get_rtd(&self, flow: f64, step: f64, is_str: Option<bool>) -> PyResult<PyObject> {
-        // todo
-        Python::with_gil(|py| Ok(py.None()))
+    fn get_probes(&self, py: Python<'_>) -> Py<PyArray1<f64>> {
+        match self.inner.get_probes() {
+            Ok(e) => PyArray1::from_owned_array(py, e).unbind(),
+            Err(e) => panic!("{}", e),
+        }
+
+       
     }
 
     fn get_properties(&self, py: Python<'_>, key: &str, i_export: usize) -> Py<PyArray1<f64>> {
