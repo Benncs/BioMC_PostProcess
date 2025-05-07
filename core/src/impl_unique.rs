@@ -1,12 +1,14 @@
 use crate::api::{ModelEstimator, PostProcessReader};
+use crate::datamodel::{f_get_probes, make_histogram, read_spatial_model_properties, Results};
 use crate::datamodel::{
     get_n_export_real, read_avg_model_properties, read_model_mass, read_model_properties,
-    vec_to_array_view2, vec_to_array_view3, Dim, tallies::Tallies, Weight,
+    tallies::Tallies, vec_to_array_view2, vec_to_array_view3, Dim, Weight,
 };
-use crate::datamodel::{f_get_probes, make_histogram, read_spatial_model_properties, Results};
-use crate::process::{spatial_average_concentration, Histogram};
+use crate::process::{
+    normalize_concentration, spatial_average_concentration, variance_concentration, Histogram,
+};
 use crate::{api::Estimator, api::Phase, error::ApiError};
-use ndarray::{s, Array1, Array2, ArrayView3, Axis};
+use ndarray::{s, Array1, Array2, ArrayView1, ArrayView2, ArrayView3, Axis};
 
 /// The `PostProcess` struct handles post-processing of simulation results.
 ///
@@ -65,6 +67,55 @@ impl PostProcessReader for PostProcess {
         Err(ApiError::RecordsError("mtr".to_string()))
 
         // let mtr = vec_to_array_view3(self.results., &dim, nt);
+    }
+
+    fn v_liquid(&self) -> ArrayView2<'_, f64> {
+        let nt = self.results.main.records.time.len();
+        let dim = &self.results.main.records.dim;
+        vec_to_array_view2(&self.results.main.records.volume_liquid, nt, dim.0)
+    }
+
+    fn get_variance_concentration(
+        &self,
+        species: usize,
+        phase: Phase,
+    ) -> Result<Array1<f64>, ApiError> {
+        // Helper
+        fn process_phase(
+            concentration: &Vec<f64>,
+            volume: &Vec<f64>,
+            nt: usize,
+            dim: &Dim,
+            species: usize,
+        ) -> Array1<f64> {
+            let c: ndarray::ArrayBase<ndarray::ViewRepr<&f64>, ndarray::Dim<[usize; 3]>> =
+                vec_to_array_view3(concentration, dim, nt);
+            let vol = vec_to_array_view2(volume, nt, dim.0);
+            let c_slice = &c.slice(s![.., .., species]);
+            let normalized_c = variance_concentration(&c_slice, &vol);
+            normalized_c
+        }
+
+        let records = &self.results.main.records;
+        let nt = records.time.len();
+        let dim = &records.dim;
+
+        match phase {
+            Phase::Gas => {
+                if let (Some(c), Some(v)) = (&records.concentration_gas, &records.volume_gas) {
+                    return Ok(process_phase(c, v, nt, dim, species));
+                }
+
+                panic!("Gas is not present");
+            }
+            Phase::Liquid => Ok(process_phase(
+                &records.concentration_liquid,
+                &records.volume_liquid,
+                nt,
+                dim,
+                species,
+            )),
+        }
     }
 
     /// Returns an `ArrayView1<f64>` representing the time data from the simulation results.
@@ -169,7 +220,7 @@ impl PostProcessReader for PostProcess {
     fn get_time_average_concentration(
         &self,
         species: usize,
-        position: usize, 
+        position: usize,
         phase: Phase,
     ) -> Result<Array1<f64>, ApiError> {
         let r = &self.results.main.records;
@@ -193,9 +244,8 @@ impl PostProcessReader for PostProcess {
         }
     }
 
-    //Actually compute spatial average property cannot be use to follow distribution  
-    fn get_spatial_average_property(&self, key:&str) ->  Result<Array2<f64>, ApiError>
-    {
+    //Actually compute spatial average property cannot be use to follow distribution
+    fn get_spatial_average_property(&self, key: &str) -> Result<Array2<f64>, ApiError> {
         let nt: usize = self.results.main.records.time.len(); // Number of time steps
         let num_dimensions = self.results.main.records.dim.0; // Dimensionality
 
@@ -206,9 +256,7 @@ impl PostProcessReader for PostProcess {
             return Err(ApiError::KeyError(key.to_string()));
         }
 
-        read_spatial_model_properties(key,self.results.get_files(), &mut biomass_matrix, nt) ?;
-     
-
+        read_spatial_model_properties(key, self.results.get_files(), &mut biomass_matrix, nt)?;
 
         // Calculate biomass concentration
         biomass_matrix /= self.get_number_particle();
@@ -216,8 +264,7 @@ impl PostProcessReader for PostProcess {
         Ok(biomass_matrix)
     }
 
-    fn get_probes(&self) -> Result<Array1<f64>, ApiError>
-    {
+    fn get_probes(&self) -> Result<Array1<f64>, ApiError> {
         f_get_probes(&self.results.files)
     }
 

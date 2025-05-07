@@ -21,11 +21,19 @@ pub fn normalize_concentration(
 }
 
 pub fn variance_concentration(
-    mean_concentration: &ArrayView1<f64>,
     concentration_record: &ArrayView2<f64>,
     full_volume: &ArrayView2<f64>,
 ) -> Array1<f64> {
-    let mean_concentration = spatial_average_concentration(concentration_record, full_volume);
+    let mean_concentration = spatial_average_concentration(concentration_record, full_volume).insert_axis(Axis(1));    
+    ((concentration_record - mean_concentration).powi(2) * full_volume).sum_axis(Axis(1))
+}
+
+
+pub fn variance_concentration_from_mean(
+    concentration_record: &ArrayView2<f64>,
+    mean_concentration: &ArrayView1<f64>,
+    full_volume: &ArrayView2<f64>,
+) -> Array1<f64> {
     ((concentration_record - mean_concentration).pow2() * full_volume).sum_axis(Axis(1))
 }
 

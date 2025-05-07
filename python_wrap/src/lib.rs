@@ -1,11 +1,11 @@
 use bcore::api::ModelEstimator;
+use bcore::Weight;
 use bcore::{PostProcess, PostProcessReader};
 use numpy::PyArray2;
 use numpy::{PyArray1, PyArray3};
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
-use bcore::Weight;
 /// A struct that wraps the `PostProcess` type for Python bindings.
 ///
 /// The `PythonPostProcess` struct is designed to provide a Python interface for the
@@ -59,7 +59,6 @@ impl From<bcore::api::Phase> for Phase {
     }
 }
 
-
 /// An enum representing different phases .
 /// # Example
 /// ```python
@@ -90,7 +89,6 @@ impl From<bcore::api::Estimator> for Estimator {
         }
     }
 }
-
 
 #[pymethods]
 impl PythonPostProcess {
@@ -126,18 +124,24 @@ impl PythonPostProcess {
         //     return Ok(Self { inner: pp });
         // }
 
-    
-        match PostProcess::new(folder, root) 
-        {
-            Ok(pp) => {Ok(Self { inner: pp })},
-            Err(err)=>{
-                println!("{:?}",err);
-                Err(PyValueError::new_err("Error creating object"))}
+        match PostProcess::new(folder, root) {
+            Ok(pp) => Ok(Self { inner: pp }),
+            Err(err) => {
+                println!("{:?}", err);
+                Err(PyValueError::new_err("Error creating object"))
+            }
         }
     }
 
     fn get_property_names(&self) -> PyResult<Vec<String>> {
         Ok(self.inner.get_property_names())
+    }
+
+    #[getter]
+    fn v_liquid(&self, py: Python<'_>)-> Py<PyArray2<f64>>
+    {
+        let e = self.inner.v_liquid().to_owned();
+        PyArray2::from_owned_array(py, e).unbind()
     }
 
     /// Gets the time data
@@ -185,14 +189,11 @@ impl PythonPostProcess {
     }
 
     #[getter]
-    fn weight(&self,py: Python<'_>) -> Py<PyArray1<f64>> {
-        match self.inner.weight()
-        {
-            Weight::Single(sw)=>{PyArray1::from_vec(py, vec![*sw]).unbind()},
-            Weight::Multiple(mw)=>{PyArray1::from_vec(py, mw.clone()).unbind()}
+    fn weight(&self, py: Python<'_>) -> Py<PyArray1<f64>> {
+        match self.inner.weight() {
+            Weight::Single(sw) => PyArray1::from_vec(py, vec![*sw]).unbind(),
+            Weight::Multiple(mw) => PyArray1::from_vec(py, mw.clone()).unbind(),
         }
-
-        
     }
 
     fn get_spatial_average_concentration(
@@ -206,6 +207,19 @@ impl PythonPostProcess {
             .get_spatial_average_concentration(species, phase.into());
 
         PyArray1::from_owned_array(py, e).unbind()
+    }
+
+    fn get_variance_concentration(
+        &self,
+        py: Python<'_>,
+        species: usize,
+        phase: Phase,
+    ) -> Py<PyArray1<f64>> {
+        if let Ok(e) = self.inner.get_variance_concentration(species, phase.into()) {
+            PyArray1::from_owned_array(py, e).unbind()
+        } else {
+            panic!("get_variance_concentration")
+        }
     }
 
     fn get_spatial_average_mtr(&self, py: Python<'_>, species: usize) -> Py<PyArray1<f64>> {
@@ -228,16 +242,16 @@ impl PythonPostProcess {
         position: usize,
         phase: Phase,
     ) -> Py<PyArray1<f64>> {
-        if let Ok(e) =
-            self.inner
-                .get_time_average_concentration(species, position, phase.into())
+        if let Ok(e) = self
+            .inner
+            .get_time_average_concentration(species, position, phase.into())
         {
             return PyArray1::from_owned_array(py, e).unbind();
         }
         panic!("")
     }
 
-    fn get_spatial_property(&self, py: Python<'_>,name: &str) -> Py<PyArray2<f64>>{
+    fn get_spatial_property(&self, py: Python<'_>, name: &str) -> Py<PyArray2<f64>> {
         // TODO
         match self.inner.get_spatial_average_property(name) {
             Ok(e) => PyArray2::from_owned_array(py, e).unbind(),
@@ -269,8 +283,6 @@ impl PythonPostProcess {
             Ok(e) => PyArray1::from_owned_array(py, e).unbind(),
             Err(e) => panic!("{}", e),
         }
-
-       
     }
 
     fn get_properties(&self, py: Python<'_>, key: &str, i_export: usize) -> Py<PyArray1<f64>> {
@@ -320,42 +332,45 @@ impl PythonPostProcess {
         }
     }
 
-    pub fn estimate(&self, etype: Estimator, key: &str, i_export: usize) -> PyResult<f64> 
-    {
-        match self.inner.estimate(etype.into(),key,i_export) {
+    pub fn estimate(&self, etype: Estimator, key: &str, i_export: usize) -> PyResult<f64> {
+        match self.inner.estimate(etype.into(), key, i_export) {
             Ok(e) => Ok(e),
             Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e.to_string())),
         }
     }
-    
-    fn get_spatial_average_biomass_concentration(&self,py: Python<'_>) -> PyResult<Py<PyArray1<f64>>>
-    {
+
+    fn get_spatial_average_biomass_concentration(
+        &self,
+        py: Python<'_>,
+    ) -> PyResult<Py<PyArray1<f64>>> {
         match self.inner.get_spatial_average_biomass_concentration() {
             Ok(e) => Ok(PyArray1::from_owned_array(py, e).unbind()),
             Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e.to_string())),
         }
     }
 
-    pub fn estimate_time(&self, py: Python<'_>,etype: Estimator, key: &str) -> PyResult<Py<PyArray1<f64>>>
-    {
-        match self.inner.estimate_time(etype.into(),key) {
+    pub fn estimate_time(
+        &self,
+        py: Python<'_>,
+        etype: Estimator,
+        key: &str,
+    ) -> PyResult<Py<PyArray1<f64>>> {
+        match self.inner.estimate_time(etype.into(), key) {
             Ok(e) => Ok(PyArray1::from_owned_array(py, e).unbind()),
             Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e.to_string())),
         }
     }
 
-    pub fn get_csv_tallies(&self, py: Python<'_>)->PyResult<String>
-    {
+    pub fn get_csv_tallies(&self, py: Python<'_>) -> PyResult<String> {
         match self.inner.tallies() {
             Some(e) => Ok(e.to_csv().unwrap()),
-            None=> Err(PyErr::new::<PyRuntimeError, _>("No data")),
+            None => Err(PyErr::new::<PyRuntimeError, _>("No data")),
         }
     }
 
     fn get_tallies(&self, py: Python<'_>) -> Py<PyArray2<f64>> {
         match self.inner.tallies() {
-            Some(e) => 
-            {
+            Some(e) => {
                 let v = e.to_array().to_owned();
                 PyArray2::from_owned_array(py, v).unbind()
             }
@@ -367,9 +382,9 @@ impl PythonPostProcess {
 #[pymodule]
 mod biomc_pp {
     #[pymodule_export]
-    use super::Phase;
-    #[pymodule_export]
     use super::Estimator;
+    #[pymodule_export]
+    use super::Phase;
     #[pymodule_export]
     use super::PythonPostProcess;
 }

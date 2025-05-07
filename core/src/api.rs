@@ -1,7 +1,7 @@
 use crate::datamodel::{Weight,tallies::Tallies};
 
 use crate::error::ApiError;
-use ndarray::{Array1, Array2, ArrayView3};
+use ndarray::{Array1, Array2, ArrayView2, ArrayView3};
 
 /// `Phase` enum represents different states or phases of a substance.
 #[derive(Clone, PartialEq, Copy)]
@@ -26,6 +26,8 @@ pub trait PostProcessReader {
     /// # Returns
     /// * `&[f64]` - A slice containing the time data.
     fn time(&self) -> &[f64];
+
+    fn v_liquid(&self) -> ArrayView2<'_, f64>;
 
     /// Returns a weight chosen for simulation 
     ///
@@ -85,6 +87,11 @@ pub trait PostProcessReader {
     fn get_concentrations(&self, phase: Phase) -> ArrayView3<f64>;
 
     fn get_spatial_average_mtr(&self, species: usize) -> Result<Array1<f64>, ApiError>;
+
+    fn get_variance_concentration(&self,species:usize,phase:Phase)-> Result<Array1<f64>, ApiError>;
+
+    
+    
 
     /// Computes the time average concentration for a specific species, position, and phase.
     ///

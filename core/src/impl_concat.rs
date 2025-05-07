@@ -2,7 +2,7 @@ use crate::api::PostProcessReader;
 use crate::datamodel::{Weight,tallies::Tallies};
 
 use crate::{api::Phase, error::ApiError, PostProcess};
-use ndarray::{Array1, Array2, ArrayView3, Axis};
+use ndarray::{Array1, Array2, ArrayView2, ArrayView3, Axis};
 
 #[derive(Debug)]
 pub struct ConcatPostPrcess {
@@ -47,12 +47,22 @@ impl PostProcessReader for ConcatPostPrcess {
         todo!()
     }
 
+    fn v_liquid(&self) -> ArrayView2<'_, f64>
+    {
+        todo!()
+    }
+
     fn get_spatial_average_property(&self, key:&str) ->  Result<Array2<f64>, ApiError>
     {
         todo!()
     }
 
     fn get_concentrations(&self, phase: Phase) -> ArrayView3<f64> {
+        todo!()
+    }
+
+    fn get_variance_concentration(&self,species:usize,phase:Phase)-> Result<Array1<f64>, ApiError>
+    {
         todo!()
     }
 
