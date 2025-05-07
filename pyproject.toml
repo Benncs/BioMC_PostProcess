@@ -18,7 +18,7 @@ dependencies = [
 
 [project.optional-dependencies]
 vtk = [
-  'cmtool>=1.0.0',
+#  'cmtool>=1.0.0',
     'vtk==9.3.0',
 ]
 
