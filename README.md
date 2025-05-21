@@ -3,7 +3,7 @@
 
 
 ## Project Overview
-The **BioMC Postprocessor API** is a Rust module designed to facilitate interaction with post-processing simulation results via the BiomC API.  
+The **BioMC Postprocessor API** is a Rust API designed to interact with and perform post-processing on simulation results obtained with the [BioMC code](https://github.com/Benncs/BioCMA-MCST).  
 It also includes **PyO3 bindings** to provide a high-level Python API for end users.
 
 
