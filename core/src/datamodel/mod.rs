@@ -165,7 +165,7 @@ mod tests {
     #[test]
     fn test_vec_to_array_view3() {
         let vec = vec![1.0; 6]; // 2 * 3 dimensions
-        let dim = &Dim { 0: 2, 1: 3 };
+        let dim = &Dim(2, 3);
         let nt = 1;
         let vec_copy = vec.clone();
         let array_view = vec_to_array_view3(&vec, dim, nt);
@@ -179,7 +179,7 @@ mod tests {
     #[should_panic]
     fn test_vec_to_array_view3_size_mismatch() {
         let vec = vec![1.0, 2.0, 3.0];
-        let dim = &Dim { 0: 2, 1: 3 };
+        let dim = &Dim(2, 3);
         let nt = 1;
 
         let _ = vec_to_array_view3(&vec, dim, nt);

@@ -8,7 +8,7 @@ fn main() {
         Some("/home-local/casale/Documents/thesis/simulations/meta/out_str_nu_redis_2".to_string()),
     ) {
         let x = obj.get_biomass_concentration().unwrap();
-        let time: Vec<f64> = obj.time().into_iter().map(|t| t / 3600.).collect();
+        let time: Vec<f64> = obj.time().iter().map(|t| t / 3600.).collect();
         let xvec = x.slice(s![.., 0]).to_vec();
 
         let mut plot = Plot::new();

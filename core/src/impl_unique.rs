@@ -5,10 +5,10 @@ use crate::datamodel::{
     tallies::Tallies, vec_to_array_view2, vec_to_array_view3, Dim, Weight,
 };
 use crate::process::{
-    normalize_concentration, spatial_average_concentration, variance_concentration, Histogram,
+    spatial_average_concentration, variance_concentration, Histogram,
 };
 use crate::{api::Estimator, api::Phase, error::ApiError};
-use ndarray::{s, Array1, Array2, ArrayView1, ArrayView2, ArrayView3, Axis};
+use ndarray::{s, Array1, Array2, ArrayView2, ArrayView3, Axis};
 
 /// The `PostProcess` struct handles post-processing of simulation results.
 ///
@@ -92,8 +92,8 @@ impl PostProcessReader for PostProcess {
                 vec_to_array_view3(concentration, dim, nt);
             let vol = vec_to_array_view2(volume, nt, dim.0);
             let c_slice = &c.slice(s![.., .., species]);
-            let normalized_c = variance_concentration(&c_slice, &vol);
-            normalized_c
+            
+            variance_concentration(c_slice, &vol)
         }
 
         let records = &self.results.main.records;

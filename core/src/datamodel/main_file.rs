@@ -5,7 +5,6 @@
 
 use super::{tallies::Tallies, Dim, ResultGroup, Weight};
 use std::collections::HashMap;
-use ndarray::{ArrayView2};
 ///File's mics section
 #[derive(Debug)]
 pub struct Misc {

@@ -35,3 +35,4 @@ It also includes **PyO3 bindings** to provide a high-level Python API for end us
 ### LICENSE 
 
 
+This code is under [MIT](./LICENSE) license
