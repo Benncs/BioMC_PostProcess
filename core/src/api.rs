@@ -1,7 +1,7 @@
-use crate::datamodel::Weight;
-use crate::error::ApiError;
-use ndarray::{Array1, Array2, ArrayView3};
+use crate::datamodel::{Weight,tallies::Tallies};
 
+use crate::error::ApiError;
+use ndarray::{Array1, Array2, ArrayView2, ArrayView3};
 
 /// `Phase` enum represents different states or phases of a substance.
 #[derive(Clone, PartialEq, Copy)]
@@ -10,13 +10,12 @@ pub enum Phase {
     Gas,
 }
 
-/// Type of estimator to retrieve data from MC Particle  
+/// Type of estimator to retrieve data from MC Particle
 #[derive(Copy, Clone)]
 pub enum Estimator {
     MonteCarlo,
     Weighted,
 }
-
 
 /// A trait for postprocessing operations on simulation results.
 ///
@@ -28,7 +27,19 @@ pub trait PostProcessReader {
     /// * `&[f64]` - A slice containing the time data.
     fn time(&self) -> &[f64];
 
+    fn v_liquid(&self) -> ArrayView2<'_, f64>;
+
+    /// Returns a weight chosen for simulation 
+    ///
+    /// # Returns
+    /// * `Weight object: Can contain either float (unique weight) or vector of weight (non implemented yet)
     fn weight(&self) -> &Weight;
+
+    // Returns tallies if exported during simulation 
+    ///
+    /// # Returns
+    /// * `Option<&Tallies>: Some if tallies exported 
+    fn tallies(&self) -> Option<&Tallies>;
 
     /// Returns a 1D array view of the time data from the simulation results.
     ///
@@ -52,7 +63,11 @@ pub trait PostProcessReader {
     /// # Returns
     /// * `usize` - The total number of export events.
     fn n_export(&self) -> usize;
-
+    
+    /// Returns model's property names  
+    ///
+    /// # Returns
+    /// * `Vec<String>: Names, empty if no exported names  
     fn get_property_names(&self) -> Vec<String>;
 
     /// Computes the spatial average concentration for a specific species and phase.
@@ -65,11 +80,18 @@ pub trait PostProcessReader {
     /// * `Array1<f64>` - A 1D array containing the spatial average concentrations over time.
     fn get_spatial_average_concentration(&self, species: usize, phase: Phase) -> Array1<f64>;
 
+    fn get_spatial_average_property(&self, key:&str) ->  Result<Array2<f64>, ApiError>;
+
     fn get_spatial_average_biomass_concentration(&self) -> Result<Array1<f64>, ApiError>;
 
     fn get_concentrations(&self, phase: Phase) -> ArrayView3<f64>;
 
     fn get_spatial_average_mtr(&self, species: usize) -> Result<Array1<f64>, ApiError>;
+
+    fn get_variance_concentration(&self,species:usize,phase:Phase)-> Result<Array1<f64>, ApiError>;
+
+    
+    
 
     /// Computes the time average concentration for a specific species, position, and phase.
     ///
@@ -94,6 +116,9 @@ pub trait PostProcessReader {
     /// * `Result<Array2<f64>, String>` - A 2D array containing biomass concentrations over time,
     ///   or an error message if the calculation fails.
     fn get_biomass_concentration(&self) -> Result<Array2<f64>, ApiError>;
+
+    fn get_probes(&self) -> Result<Array1<f64>, ApiError>;
+    
 
     /// Calculates the total growth in number.
     ///
@@ -173,15 +198,12 @@ pub trait PostProcessReader {
     fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, ApiError>;
 }
 
-
-
 pub trait ModelEstimator {
     fn mu_direct(&self) -> Result<Array1<f64>, ApiError>;
 
     fn estimate(&self, etype: Estimator, key: &str, i_export: usize) -> Result<f64, ApiError>;
 
     fn estimate_time(&self, etype: Estimator, key: &str) -> Result<Array1<f64>, ApiError>;
-
 }
 
 #[cfg(test)]
@@ -194,8 +216,8 @@ mod tests {
         let rx = Array1::from(vec![2.0, 4.0, 6.0]);
         let weight = 2.0;
 
-
-        let result = crate::process::estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx).unwrap();
+        let result =
+            crate::process::estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx).unwrap();
         let dim = rx.dim();
         let weighted_estimator: f64 = (rx * weight).sum(); // (2.0*2.0 + 4.0*2.0 + 6.0*2.0) = 24.0
         let normalization_factor = (0..dim).map(|_| weight).sum::<f64>(); // 2.0 * 3 = 6.0
@@ -208,7 +230,8 @@ mod tests {
         let rx = Array1::from(vec![2.0, 4.0, 6.0]);
         let weight = 2.0;
 
-        let result = crate::process::estimate(Estimator::Weighted, &Weight::Single(weight), &rx).unwrap();
+        let result =
+            crate::process::estimate(Estimator::Weighted, &Weight::Single(weight), &rx).unwrap();
 
         let weighted_estimator: f64 = (rx * weight).sum(); // (2.0*2.0 + 4.0*2.0 + 6.0*2.0) = 24.0
         let expected_result = weighted_estimator; // Since it's weighted, it should return the weighted sum.
@@ -220,7 +243,8 @@ mod tests {
         let rx = Array1::from(vec![2.0, 4.0, 6.0]);
         let weight = 0.0;
 
-        let result = crate::process::estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx).unwrap();
+        let result =
+            crate::process::estimate(Estimator::MonteCarlo, &Weight::Single(weight), &rx).unwrap();
         assert_eq!(result, 0.0);
     }
 
@@ -228,7 +252,8 @@ mod tests {
     fn test_empty_array() {
         let rx = Array1::from(vec![]);
         let weight = 2.0;
-        let result = crate::process::estimate(Estimator::Weighted, &Weight::Single(weight), &rx).unwrap();
+        let result =
+            crate::process::estimate(Estimator::Weighted, &Weight::Single(weight), &rx).unwrap();
 
         // With an empty array, the result should be zero
         assert_eq!(result, 0.0);

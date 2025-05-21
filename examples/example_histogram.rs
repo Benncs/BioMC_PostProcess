@@ -1,6 +1,5 @@
 use bcore::{PostProcess,PostProcessReader};
-use plotly::layout::{Shape, ShapeLine, ShapeType};
-use plotly::{ImageFormat, Scatter};
+use plotly::ImageFormat;
 use plotly::{Bar, Layout, Plot};
 
 fn main() {

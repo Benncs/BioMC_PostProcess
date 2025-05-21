@@ -1,6 +1,8 @@
+use crate::error::ApiError;
 use crate::process::Histogram;
 
 use super::main_file::{MainFInal, MainInitial, MainRecords, Misc};
+use super::tallies::Tallies;
 use super::{Dim, ResultGroup};
 use hdf5::Group;
 use ndarray::{s, Array1, Array2, ArrayView1};
@@ -60,19 +62,19 @@ pub fn read_number_particle(filename: &str) -> hdf5::Result<Vec<f64>> {
     Ok(v)
 }
 
-fn read_spatial_model_properties(
+pub fn read_spatial_model_properties(
     key: &str,
     files: &[String],
     cx: &mut Array2<f64>,
     n_export: usize,
-) -> hdf5::Result<()> {
+) -> Result<(), ApiError> {
     for filename in files.iter() {
         // Open the HDF5 file in read mode
         let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
 
         // Access the "biological_model" group
         let group = file.group("biological_model")?;
-        //TODO: use group.len() instead of n_export 
+        //TODO: use group.len() instead of n_export
         for i_e in 0..n_export {
             // Read the data for the current export index
             let tmp: Vec<f64> = match group.dataset(&format!("{}/spatial/{}", i_e, key)) {
@@ -88,17 +90,34 @@ fn read_spatial_model_properties(
             if tmp_array.len() == slice_shape {
                 cx.slice_mut(s![i_e, ..])
                     .zip_mut_with(&tmp_array, |a, b| *a += b);
-                } else {
-                    eprintln!(
-                        "Shape mismatch: cx[{}, ..].shape = {}, tmp.shape = {}",
-                        i_e,
-                        slice_shape,
-                        tmp_array.len()
-                    );
+            } else {
+                eprintln!(
+                    "Shape mismatch: cx[{}, ..].shape = {}, tmp.shape = {}",
+                    i_e,
+                    slice_shape,
+                    tmp_array.len()
+                );
             }
         }
     }
     Ok(())
+}
+
+pub fn get_probe_size(files: &[String])-> Result<usize,ApiError>
+{
+    let mut probe_size = 0;
+    for filename in files.iter() {
+        let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
+        if let Ok(dataset) = file.dataset("probes")
+        {
+            probe_size += dataset.size();
+        }
+        else {
+            return Err(ApiError::Default("No Probes in dataset".to_string()));
+        }
+        
+    }
+    Ok(probe_size)
 }
 
 pub fn read_model_properties(
@@ -115,10 +134,9 @@ pub fn read_model_properties(
         let group = file.group("biological_model")?;
         // Not all nodes have th=e same number of export so it happens that i_export is >
         // number_export for the current file
-        if (group.len() as usize)>=i_export{
+        if (group.len() as usize) >= i_export {
             let dataset = group.dataset(&format!("{}/{}", i_export, key))?;
             total_size += dataset.size();
-
         }
     }
 
@@ -130,14 +148,15 @@ pub fn read_model_properties(
 
         // Access the "biological_model" group
         let group = file.group("biological_model")?;
-        if (group.len() as usize)>=i_export{
+        if (group.len() as usize) >= i_export {
             let dataset = group.dataset(&format!("{}/{}", i_export, key))?;
 
             // Read the dataset into a temporary array
             let temp_array: Vec<f64> = dataset.read_raw::<f64>()?;
-            let tmp_array = ArrayView1::from_shape(temp_array.len(), &temp_array).map_err(|_| {
-                hdf5::Error::Internal("Shape mismatch while creating ArrayView1".to_string())
-            })?;
+            let tmp_array =
+                ArrayView1::from_shape(temp_array.len(), &temp_array).map_err(|_| {
+                    hdf5::Error::Internal("Shape mismatch while creating ArrayView1".to_string())
+                })?;
 
             // Copy the data into the result array
             result
@@ -151,27 +170,28 @@ pub fn read_model_properties(
     Ok(result)
 }
 
-pub fn get_n_export_real(files:&[String])->hdf5::Result<usize>
-{
-    if files.is_empty()
-    {
+pub fn get_n_export_real(files: &[String]) -> hdf5::Result<usize> {
+    if files.is_empty() {
         panic!("FIXME: not enough files")
     }
     let file = hdf5::File::open_as(&files[0], hdf5::file::OpenMode::Read)?;
     let group = file.group("biological_model")?;
     let group_size = group.len() as usize; //We export n_export times properties but if there is no
                                            //particle we do not export. group_size <= n_export and for
-    Ok(group_size) 
+    Ok(group_size)
 }
 
-
-pub fn make_histogram(files:&[String],i_export:usize,key:&str,hist:&mut Histogram)->hdf5::Result<()>
-{
+pub fn make_histogram(
+    files: &[String],
+    i_export: usize,
+    key: &str,
+    hist: &mut Histogram,
+) -> hdf5::Result<()> {
     for filename in files.iter() {
         // Open the HDF5 file in read mode
         let file = hdf5::File::open_as(filename, hdf5::file::OpenMode::Read)?;
         let group = file.group("biological_model")?;
-        if (group.len() as usize)>=i_export{
+        if (group.len() as usize) >= i_export {
             let dataset = group.dataset(&format!("{}/{}", i_export, key))?;
             let temp_array: Vec<f64> = dataset.read_raw::<f64>()?;
             hist.add(temp_array);
@@ -194,8 +214,8 @@ pub fn read_avg_model_properties(
         let group = file.group("biological_model")?;
         let group_size = group.len() as usize; //We export n_export times properties but if there is no
                                                //particle we do not export. group_size <= n_export and for
-                                               //all i > group_size , value is set to 0   
-        for i_e in 0..group_size{
+                                               //all i > group_size , value is set to 0
+        for i_e in 0..group_size {
             let dataset = group.dataset(&format!("{}/{}", i_e, key))?;
             let temp_array: Vec<f64> = dataset.read_raw::<f64>()?;
             result[i_e] += temp_array.iter().sum::<f64>();
@@ -210,7 +230,7 @@ pub fn read_model_mass(
     files: &[String],
     cx: &mut Array2<f64>,
     n_export: usize,
-) -> hdf5::Result<()> {
+) -> Result<(), ApiError> {
     read_spatial_model_properties("mass", files, cx, n_export)
 }
 
@@ -252,9 +272,13 @@ impl ResultGroup<MainRecords> for Group {
             _ => (None, None),
         };
 
-        let mtr = match self.dataset("mtr") 
-        {
+        let mtr = match self.dataset("mtr") {
             Ok(_mtr) => Some(_mtr.read_raw::<f64>()?),
+            _ => None,
+        };
+
+        let tallies = match self.dataset("tallies") {
+            Ok(_t) => Some(Tallies(_t.read_raw::<f64>()?)),
             _ => None,
         };
 
@@ -267,6 +291,7 @@ impl ResultGroup<MainRecords> for Group {
             concentration_gas,
             volume_gas,
             mtr,
+            tallies,
             dim,
             time,
         })
@@ -275,19 +300,24 @@ impl ResultGroup<MainRecords> for Group {
 
 impl ResultGroup<MainFInal> for Group {
     fn read_g(&self) -> hdf5::Result<MainFInal> {
-        let ds_events = self.group("events")?;
-        let mut events: HashMap<String, u64> = HashMap::new();
-        ds_events
-            .iter_visit_default(&mut events, |group, name, _link_info, fields| {
-                if let Ok(dataset) = group.dataset(name) {
-                    if let Ok(value) = dataset.read_scalar::<u64>() {
-                        fields.insert(name.to_string(), value);
-                    }
-                }
-                true
-            })
-        .unwrap();
         let number_particles = read_scalar!(self, "number_particles", u64);
+
+        let events = if let Ok(ds_events) = self.group("events") {
+            let mut events: HashMap<String, u64> = HashMap::new();
+            ds_events
+                .iter_visit_default(&mut events, |group, name, _link_info, fields| {
+                    if let Ok(dataset) = group.dataset(name) {
+                        if let Ok(value) = dataset.read_scalar::<u64>() {
+                            fields.insert(name.to_string(), value);
+                        }
+                    }
+                    true
+                })
+                .unwrap();
+            Some(events)
+        } else {
+            None
+        };
 
         Ok(MainFInal {
             events,
