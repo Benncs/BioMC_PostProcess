@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["estimate","normalize_concentration","spatial_average_concentration","variance_concentration","variance_concentration_from_mean"],"struct":["Histogram"]};

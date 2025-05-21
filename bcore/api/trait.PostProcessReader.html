@@ -1,0 +1,240 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A trait for postprocessing operations on simulation results."><title>PostProcessReader in bcore::api - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="bcore" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0 (17067e9ac 2025-05-09)" data-channel="1.87.0" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../../static.files/storage-82c7156e.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-fb8c74a8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../bcore/index.html">bcore</a><span class="version">0.4.4</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Post<wbr>Process<wbr>Reader</a></h2><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.get_biomass_concentration" title="get_biomass_concentration">get_biomass_concentration</a></li><li><a href="#tymethod.get_concentrations" title="get_concentrations">get_concentrations</a></li><li><a href="#tymethod.get_growth_in_number" title="get_growth_in_number">get_growth_in_number</a></li><li><a href="#tymethod.get_histogram" title="get_histogram">get_histogram</a></li><li><a href="#tymethod.get_histogram_array" title="get_histogram_array">get_histogram_array</a></li><li><a href="#tymethod.get_max_n_export_bio" title="get_max_n_export_bio">get_max_n_export_bio</a></li><li><a href="#tymethod.get_number_particle" title="get_number_particle">get_number_particle</a></li><li><a href="#tymethod.get_population_mean" title="get_population_mean">get_population_mean</a></li><li><a href="#tymethod.get_probes" title="get_probes">get_probes</a></li><li><a href="#tymethod.get_properties" title="get_properties">get_properties</a></li><li><a href="#tymethod.get_property_names" title="get_property_names">get_property_names</a></li><li><a href="#tymethod.get_spatial_average_biomass_concentration" title="get_spatial_average_biomass_concentration">get_spatial_average_biomass_concentration</a></li><li><a href="#tymethod.get_spatial_average_concentration" title="get_spatial_average_concentration">get_spatial_average_concentration</a></li><li><a href="#tymethod.get_spatial_average_mtr" title="get_spatial_average_mtr">get_spatial_average_mtr</a></li><li><a href="#tymethod.get_spatial_average_property" title="get_spatial_average_property">get_spatial_average_property</a></li><li><a href="#tymethod.get_time_average_concentration" title="get_time_average_concentration">get_time_average_concentration</a></li><li><a href="#tymethod.get_time_population_mean" title="get_time_population_mean">get_time_population_mean</a></li><li><a href="#tymethod.get_variance_concentration" title="get_variance_concentration">get_variance_concentration</a></li><li><a href="#tymethod.n_export" title="n_export">n_export</a></li><li><a href="#tymethod.tallies" title="tallies">tallies</a></li><li><a href="#tymethod.time" title="time">time</a></li><li><a href="#tymethod.time_array" title="time_array">time_array</a></li><li><a href="#tymethod.v_liquid" title="v_liquid">v_liquid</a></li><li><a href="#tymethod.weight" title="weight">weight</a></li></ul><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In bcore::<wbr>api</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">bcore</a>::<wbr><a href="index.html">api</a></div><h1>Trait <span class="trait">PostProcessReader</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/bcore/api.rs.html#23-199">Source</a> </span></div><pre class="rust item-decl"><code>pub trait PostProcessReader {
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 24 methods</span></summary>    // Required methods
+    fn <a href="#tymethod.time" class="fn">time</a>(&amp;self) -&gt; &amp;[<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>];
+<span class="item-spacer"></span>    fn <a href="#tymethod.v_liquid" class="fn">v_liquid</a>(&amp;self) -&gt; <a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.ArrayView2.html" title="type ndarray::aliases::ArrayView2">ArrayView2</a>&lt;'_, <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.weight" class="fn">weight</a>(&amp;self) -&gt; &amp;<a class="enum" href="../enum.Weight.html" title="enum bcore::Weight">Weight</a>;
+<span class="item-spacer"></span>    fn <a href="#tymethod.tallies" class="fn">tallies</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="struct" href="../datamodel/tallies/struct.Tallies.html" title="struct bcore::datamodel::tallies::Tallies">Tallies</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.time_array" class="fn">time_array</a>(&amp;self) -&gt; <a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_max_n_export_bio" class="fn">get_max_n_export_bio</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>;
+<span class="item-spacer"></span>    fn <a href="#tymethod.n_export" class="fn">n_export</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_property_names" class="fn">get_property_names</a>(&amp;self) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.87.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.87.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_spatial_average_concentration" class="fn">get_spatial_average_concentration</a>(
+        &amp;self,
+        species: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+        phase: <a class="enum" href="enum.Phase.html" title="enum bcore::api::Phase">Phase</a>,
+    ) -&gt; <a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_spatial_average_property" class="fn">get_spatial_average_property</a>(
+        &amp;self,
+        key: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.str.html">str</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array2.html" title="type ndarray::aliases::Array2">Array2</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_spatial_average_biomass_concentration" class="fn">get_spatial_average_biomass_concentration</a>(
+        &amp;self,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_concentrations" class="fn">get_concentrations</a>(&amp;self, phase: <a class="enum" href="enum.Phase.html" title="enum bcore::api::Phase">Phase</a>) -&gt; <a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.ArrayView3.html" title="type ndarray::aliases::ArrayView3">ArrayView3</a>&lt;'_, <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_spatial_average_mtr" class="fn">get_spatial_average_mtr</a>(
+        &amp;self,
+        species: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_variance_concentration" class="fn">get_variance_concentration</a>(
+        &amp;self,
+        species: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+        phase: <a class="enum" href="enum.Phase.html" title="enum bcore::api::Phase">Phase</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_time_average_concentration" class="fn">get_time_average_concentration</a>(
+        &amp;self,
+        species: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+        position: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+        phase: <a class="enum" href="enum.Phase.html" title="enum bcore::api::Phase">Phase</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_biomass_concentration" class="fn">get_biomass_concentration</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array2.html" title="type ndarray::aliases::Array2">Array2</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_probes" class="fn">get_probes</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_growth_in_number" class="fn">get_growth_in_number</a>(&amp;self) -&gt; <a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_number_particle" class="fn">get_number_particle</a>(&amp;self) -&gt; &amp;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array2.html" title="type ndarray::aliases::Array2">Array2</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_properties" class="fn">get_properties</a>(
+        &amp;self,
+        key: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.str.html">str</a>,
+        i_export: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_time_population_mean" class="fn">get_time_population_mean</a>(
+        &amp;self,
+        key: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.str.html">str</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_histogram_array" class="fn">get_histogram_array</a>(
+        &amp;self,
+        n_bins: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+        i_export: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+        key: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.str.html">str</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;(<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;), <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_histogram" class="fn">get_histogram</a>(
+        &amp;self,
+        n_bins: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+        i_export: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+        key: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.str.html">str</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;(<a class="struct" href="https://doc.rust-lang.org/1.87.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="struct" href="https://doc.rust-lang.org/1.87.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;), <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_population_mean" class="fn">get_population_mean</a>(
+        &amp;self,
+        key: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.str.html">str</a>,
+        i_export: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;;
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A trait for postprocessing operations on simulation results.</p>
+<p>This trait defines various methods for analyzing and retrieving data from simulation results.</p>
+</div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.time" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#28">Source</a><h4 class="code-header">fn <a href="#tymethod.time" class="fn">time</a>(&amp;self) -&gt; &amp;[<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>]</h4></section></summary><div class="docblock"><p>Returns a reference to the time data from the simulation results.</p>
+<h5 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h5>
+<ul>
+<li><code>&amp;[f64]</code> - A slice containing the time data.</li>
+</ul>
+</div></details><section id="tymethod.v_liquid" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#30">Source</a><h4 class="code-header">fn <a href="#tymethod.v_liquid" class="fn">v_liquid</a>(&amp;self) -&gt; <a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.ArrayView2.html" title="type ndarray::aliases::ArrayView2">ArrayView2</a>&lt;'_, <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;</h4></section><details class="toggle method-toggle" open><summary><section id="tymethod.weight" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#36">Source</a><h4 class="code-header">fn <a href="#tymethod.weight" class="fn">weight</a>(&amp;self) -&gt; &amp;<a class="enum" href="../enum.Weight.html" title="enum bcore::Weight">Weight</a></h4></section></summary><div class="docblock"><p>Returns a weight chosen for simulation</p>
+<h5 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h5>
+<ul>
+<li>`Weight object: Can contain either float (unique weight) or vector of weight (non implemented yet)</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.tallies" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#42">Source</a><h4 class="code-header">fn <a href="#tymethod.tallies" class="fn">tallies</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="struct" href="../datamodel/tallies/struct.Tallies.html" title="struct bcore::datamodel::tallies::Tallies">Tallies</a>&gt;</h4></section></summary><div class="docblock"><h5 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h5>
+<ul>
+<li>`Option&lt;&amp;Tallies&gt;: Some if tallies exported</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.time_array" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#48">Source</a><h4 class="code-header">fn <a href="#tymethod.time_array" class="fn">time_array</a>(&amp;self) -&gt; <a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;</h4></section></summary><div class="docblock"><p>Returns a 1D array view of the time data from the simulation results.</p>
+<h5 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h5>
+<ul>
+<li><code>ArrayView1&lt;f64&gt;</code> - A 1D array view containing the time data.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_max_n_export_bio" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#57">Source</a><h4 class="code-header">fn <a href="#tymethod.get_max_n_export_bio" class="fn">get_max_n_export_bio</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a></h4></section></summary><div class="docblock"><p>Retrieves the maximum number of biological export events.</p>
+<p>This method determines the maximum number of export events specifically related
+to biological data dumps.</p>
+<h5 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h5>
+<ul>
+<li><code>usize</code> - The number of biological export events, or <code>0</code> if no events are found.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.n_export" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#65">Source</a><h4 class="code-header">fn <a href="#tymethod.n_export" class="fn">n_export</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a></h4></section></summary><div class="docblock"><p>Retrieves the total number of export events from the simulation results.</p>
+<p>This count includes all types of export actions.</p>
+<h5 id="returns-5"><a class="doc-anchor" href="#returns-5">§</a>Returns</h5>
+<ul>
+<li><code>usize</code> - The total number of export events.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_property_names" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#71">Source</a><h4 class="code-header">fn <a href="#tymethod.get_property_names" class="fn">get_property_names</a>(&amp;self) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.87.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.87.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Returns model’s property names</p>
+<h5 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h5>
+<ul>
+<li>`Vec<String>: Names, empty if no exported names</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_spatial_average_concentration" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#81">Source</a><h4 class="code-header">fn <a href="#tymethod.get_spatial_average_concentration" class="fn">get_spatial_average_concentration</a>(
+    &amp;self,
+    species: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+    phase: <a class="enum" href="enum.Phase.html" title="enum bcore::api::Phase">Phase</a>,
+) -&gt; <a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;</h4></section></summary><div class="docblock"><p>Computes the spatial average concentration for a specific species and phase.</p>
+<h5 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h5>
+<ul>
+<li><code>species</code> - The index of the species for which to calculate the average.</li>
+<li><code>phase</code> - The phase (e.g., liquid or gas) to consider.</li>
+</ul>
+<h5 id="returns-7"><a class="doc-anchor" href="#returns-7">§</a>Returns</h5>
+<ul>
+<li><code>Array1&lt;f64&gt;</code> - A 1D array containing the spatial average concentrations over time.</li>
+</ul>
+</div></details><section id="tymethod.get_spatial_average_property" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#83">Source</a><h4 class="code-header">fn <a href="#tymethod.get_spatial_average_property" class="fn">get_spatial_average_property</a>(
+    &amp;self,
+    key: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.str.html">str</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array2.html" title="type ndarray::aliases::Array2">Array2</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;</h4></section><section id="tymethod.get_spatial_average_biomass_concentration" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#85">Source</a><h4 class="code-header">fn <a href="#tymethod.get_spatial_average_biomass_concentration" class="fn">get_spatial_average_biomass_concentration</a>(
+    &amp;self,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;</h4></section><section id="tymethod.get_concentrations" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#87">Source</a><h4 class="code-header">fn <a href="#tymethod.get_concentrations" class="fn">get_concentrations</a>(&amp;self, phase: <a class="enum" href="enum.Phase.html" title="enum bcore::api::Phase">Phase</a>) -&gt; <a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.ArrayView3.html" title="type ndarray::aliases::ArrayView3">ArrayView3</a>&lt;'_, <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;</h4></section><section id="tymethod.get_spatial_average_mtr" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#89">Source</a><h4 class="code-header">fn <a href="#tymethod.get_spatial_average_mtr" class="fn">get_spatial_average_mtr</a>(
+    &amp;self,
+    species: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;</h4></section><section id="tymethod.get_variance_concentration" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#91">Source</a><h4 class="code-header">fn <a href="#tymethod.get_variance_concentration" class="fn">get_variance_concentration</a>(
+    &amp;self,
+    species: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+    phase: <a class="enum" href="enum.Phase.html" title="enum bcore::api::Phase">Phase</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;</h4></section><details class="toggle method-toggle" open><summary><section id="tymethod.get_time_average_concentration" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#106-111">Source</a><h4 class="code-header">fn <a href="#tymethod.get_time_average_concentration" class="fn">get_time_average_concentration</a>(
+    &amp;self,
+    species: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+    position: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+    phase: <a class="enum" href="enum.Phase.html" title="enum bcore::api::Phase">Phase</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;</h4></section></summary><div class="docblock"><p>Computes the time average concentration for a specific species, position, and phase.</p>
+<h5 id="arguments-1"><a class="doc-anchor" href="#arguments-1">§</a>Arguments</h5>
+<ul>
+<li><code>species</code> - The index of the species for which to calculate the average.</li>
+<li><code>position</code> - The position in the simulation domain to consider.</li>
+<li><code>phase</code> - The phase (e.g., liquid or gas) to consider.</li>
+</ul>
+<h5 id="returns-8"><a class="doc-anchor" href="#returns-8">§</a>Returns</h5>
+<ul>
+<li><code>Result&lt;Array1&lt;f64&gt;, String&gt;</code> - A 1D array containing the time average concentrations,
+or an error message if the calculation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_biomass_concentration" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#118">Source</a><h4 class="code-header">fn <a href="#tymethod.get_biomass_concentration" class="fn">get_biomass_concentration</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array2.html" title="type ndarray::aliases::Array2">Array2</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;</h4></section></summary><div class="docblock"><p>Calculates the biomass concentration over time.</p>
+<h5 id="returns-9"><a class="doc-anchor" href="#returns-9">§</a>Returns</h5>
+<ul>
+<li><code>Result&lt;Array2&lt;f64&gt;, String&gt;</code> - A 2D array containing biomass concentrations over time,
+or an error message if the calculation fails.</li>
+</ul>
+</div></details><section id="tymethod.get_probes" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#120">Source</a><h4 class="code-header">fn <a href="#tymethod.get_probes" class="fn">get_probes</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;</h4></section><details class="toggle method-toggle" open><summary><section id="tymethod.get_growth_in_number" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#127">Source</a><h4 class="code-header">fn <a href="#tymethod.get_growth_in_number" class="fn">get_growth_in_number</a>(&amp;self) -&gt; <a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;</h4></section></summary><div class="docblock"><p>Calculates the total growth in number.</p>
+<h5 id="returns-10"><a class="doc-anchor" href="#returns-10">§</a>Returns</h5>
+<ul>
+<li><code>Array1&lt;f64&gt;</code> - A 1D array containing the summed growth numbers over time.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_number_particle" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#133">Source</a><h4 class="code-header">fn <a href="#tymethod.get_number_particle" class="fn">get_number_particle</a>(&amp;self) -&gt; &amp;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array2.html" title="type ndarray::aliases::Array2">Array2</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;</h4></section></summary><div class="docblock"><p>Retrieves a reference to the 2D array of particle numbers.</p>
+<h5 id="returns-11"><a class="doc-anchor" href="#returns-11">§</a>Returns</h5>
+<ul>
+<li><code>&amp;Array2&lt;f64&gt;</code> - A reference to the 2D array of particle numbers.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_properties" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#144">Source</a><h4 class="code-header">fn <a href="#tymethod.get_properties" class="fn">get_properties</a>(
+    &amp;self,
+    key: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.str.html">str</a>,
+    i_export: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;</h4></section></summary><div class="docblock"><p>Fetches specific properties of the model at a given export index.</p>
+<h5 id="arguments-2"><a class="doc-anchor" href="#arguments-2">§</a>Arguments</h5>
+<ul>
+<li><code>key</code> - The key identifying the property to retrieve.</li>
+<li><code>i_export</code> - The export index for which to retrieve the property.</li>
+</ul>
+<h5 id="returns-12"><a class="doc-anchor" href="#returns-12">§</a>Returns</h5>
+<ul>
+<li><code>Result&lt;Array1&lt;f64&gt;, String&gt;</code> - A 1D array of property values,
+or an error message if the retrieval fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_time_population_mean" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#154">Source</a><h4 class="code-header">fn <a href="#tymethod.get_time_population_mean" class="fn">get_time_population_mean</a>(&amp;self, key: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.str.html">str</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;</h4></section></summary><div class="docblock"><p>Calculates the time-averaged population mean for a specific property key.</p>
+<h5 id="arguments-3"><a class="doc-anchor" href="#arguments-3">§</a>Arguments</h5>
+<ul>
+<li><code>key</code> - The key identifying the property to average.</li>
+</ul>
+<h5 id="returns-13"><a class="doc-anchor" href="#returns-13">§</a>Returns</h5>
+<ul>
+<li><code>Result&lt;Array1&lt;f64&gt;, String&gt;</code> - A 1D array of mean values over time,
+or an error message if the calculation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_histogram_array" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#166-171">Source</a><h4 class="code-header">fn <a href="#tymethod.get_histogram_array" class="fn">get_histogram_array</a>(
+    &amp;self,
+    n_bins: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+    i_export: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+    key: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.str.html">str</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;(<a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="type" href="https://docs.rs/ndarray/0.15/ndarray/aliases/type.Array1.html" title="type ndarray::aliases::Array1">Array1</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;), <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;</h4></section></summary><div class="docblock"><p>Retrieves histogram data for a specific property key at a given export index.</p>
+<h5 id="arguments-4"><a class="doc-anchor" href="#arguments-4">§</a>Arguments</h5>
+<ul>
+<li><code>n_bins</code> - The number of bins to use in the histogram.</li>
+<li><code>i_export</code> - The export index for which to retrieve the histogram.</li>
+<li><code>key</code> - The key identifying the property to calculate the histogram for.</li>
+</ul>
+<h5 id="returns-14"><a class="doc-anchor" href="#returns-14">§</a>Returns</h5>
+<ul>
+<li><code>Result&lt;(Array1&lt;f64&gt;, Array1&lt;f64&gt;), String&gt;</code> - The histogram bins and counts,
+or an error message if the calculation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_histogram" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#183-188">Source</a><h4 class="code-header">fn <a href="#tymethod.get_histogram" class="fn">get_histogram</a>(
+    &amp;self,
+    n_bins: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+    i_export: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+    key: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.str.html">str</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;(<a class="struct" href="https://doc.rust-lang.org/1.87.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;, <a class="struct" href="https://doc.rust-lang.org/1.87.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>&gt;), <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;</h4></section></summary><div class="docblock"><p>Retrieves histogram data for a specific property key at a given export index.</p>
+<h5 id="arguments-5"><a class="doc-anchor" href="#arguments-5">§</a>Arguments</h5>
+<ul>
+<li><code>n_bins</code> - The number of bins to use in the histogram.</li>
+<li><code>i_export</code> - The export index for which to retrieve the histogram.</li>
+<li><code>key</code> - The key identifying the property to calculate the histogram for.</li>
+</ul>
+<h5 id="returns-15"><a class="doc-anchor" href="#returns-15">§</a>Returns</h5>
+<ul>
+<li><code>Result&lt;(Vec&lt;f64&gt;, Vec&lt;f64&gt;), String&gt;</code> - The histogram bins and counts as vectors,
+or an error message if the calculation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_population_mean" class="method"><a class="src rightside" href="../../src/bcore/api.rs.html#198">Source</a><h4 class="code-header">fn <a href="#tymethod.get_population_mean" class="fn">get_population_mean</a>(
+    &amp;self,
+    key: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.str.html">str</a>,
+    i_export: <a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.usize.html">usize</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.87.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.87.0/std/primitive.f64.html">f64</a>, <a class="enum" href="../error/enum.ApiError.html" title="enum bcore::error::ApiError">ApiError</a>&gt;</h4></section></summary><div class="docblock"><p>Retrieves the population mean for a specific property key at a given export index.</p>
+<h5 id="arguments-6"><a class="doc-anchor" href="#arguments-6">§</a>Arguments</h5>
+<ul>
+<li><code>key</code> - The key identifying the property to calculate the mean for.</li>
+<li><code>i_export</code> - The export index for which to calculate the mean.</li>
+</ul>
+<h5 id="returns-16"><a class="doc-anchor" href="#returns-16">§</a>Returns</h5>
+<ul>
+<li><code>Result&lt;f64, String&gt;</code> - The population mean, or an error message if the calculation fails.</li>
+</ul>
+</div></details></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"><section id="impl-PostProcessReader-for-ConcatPostPrcess" class="impl"><a class="src rightside" href="../../src/bcore/impl_concat.rs.html#45-223">Source</a><a href="#impl-PostProcessReader-for-ConcatPostPrcess" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="trait.PostProcessReader.html" title="trait bcore::api::PostProcessReader">PostProcessReader</a> for <a class="struct" href="../struct.ConcatPostPrcess.html" title="struct bcore::ConcatPostPrcess">ConcatPostPrcess</a></h3></section><section id="impl-PostProcessReader-for-PostProcess" class="impl"><a class="src rightside" href="../../src/bcore/impl_unique.rs.html#40-418">Source</a><a href="#impl-PostProcessReader-for-PostProcess" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="trait.PostProcessReader.html" title="trait bcore::api::PostProcessReader">PostProcessReader</a> for <a class="struct" href="../struct.PostProcess.html" title="struct bcore::PostProcess">PostProcess</a></h3></section></div><script src="../../trait.impl/bcore/api/trait.PostProcessReader.js" async></script></section></div></main></body></html>
