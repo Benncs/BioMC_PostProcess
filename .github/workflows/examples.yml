@@ -9,6 +9,8 @@ on:
       - '*'
   pull_request:
 
+permissions:
+  contents: read write
   #TODO: wait for test to finish 
 
 jobs:
