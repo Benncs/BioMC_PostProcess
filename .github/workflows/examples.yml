@@ -1,11 +1,18 @@
-name: Run Examples (after tests)
+name: Run Examples 
 
 on:
-  workflow_run:
-    workflows: ["Rust Test"]
-    types:
-      - completed
+   workflow_call: {} 
+  push:
+    branches:
+      - main
+      - "0.5"
+    tags:
+      - '*'
+  pull_request:
+  workflow_dispatch:
 
+  #TODO: wait for test to finish 
+  
 jobs:
   run_example:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
