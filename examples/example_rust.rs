@@ -4,10 +4,19 @@ use ndarray::s;
 use plotly::ImageFormat;
 use plotly::{Layout, Plot, Scatter};
 fn main() {
-    let obj = PostProcess::new(
-        "example0d",
-        Some("./examples/".to_string())).unwrap();
-   
+    let r_obj = PostProcess::new(
+        "exampled",
+        Some("./examples/".to_string()));
+
+        if r_obj.is_err()
+        {
+            println!("Error {:?}",r_obj);
+            return;
+        }
+
+        let obj  =r_obj.unwrap();
+
+
         let x = obj.get_biomass_concentration().unwrap();
         let time: Vec<f64> = obj.time().iter().map(|t| t / 3600.).collect();
         let xvec = x.slice(s![.., 0]).to_vec();
