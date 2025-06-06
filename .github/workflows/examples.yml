@@ -1,0 +1,55 @@
+name: Run Examples (after tests)
+
+on:
+  workflow_run:
+    workflows: ["Rust Test"]
+    types:
+      - completed
+
+jobs:
+  run_example:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libhdf5-dev
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.7.11"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Run examples
+        run: |
+          cargo run --release --example rust
+          cargo run --release --example rust_hist
+          uv run examples/python/example_python.py
+
+      - name: Archive output files
+        run: |
+          mkdir -p artefact
+          find examples/ -type f \( -name "*.svg" -o -name "*.png" -o -name "*.html" \) -exec cp --parents {} artefact/ \;
+          tar -cvf artefact.tar -C artefact .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: example-artefact
+          path: artefact.tar

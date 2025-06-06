@@ -4,7 +4,7 @@ import numpy as np
 
 import timeit
 def test():
-    pp = biomc_pp.PostProcess("cstr","/home/benjamin/Documents/code/cpp/BioCMA-MCST/results/")
+    pp = biomc_pp.PostProcess("example0d","examples/")
     return pp.get_number_particle()
 
 def main():
@@ -14,7 +14,7 @@ def main():
     # c =results.get_spatial_average_concentration(0,biomc_pp.Phase.Liquid)
     # ctt =results.get_time_average_concentration(0,0,biomc_pp.Phase.Liquid)
     
-    pp = biomc_pp.PostProcess("test","/home_pers/casale/Documents/code/biomc/results/")
+    pp = biomc_pp.PostProcess("example0d","examples/")
 
     p = pp.get_growth_in_number()
     
@@ -53,5 +53,3 @@ def main():
 
 
 
-
-main()

@@ -9,7 +9,7 @@ if __name__=="__main__":
     X = pp.get_biomass_concentration()
     plt.plot(time,X)
     plt.title("Biomass concentration")
-    plt.savefig("./examples/out_py.png")
+    plt.savefig("./examples/out_python_2.png")
 
 
     n,c= pp.get_histogram(50,pp.n_export - 1, "nu_eff_2")
@@ -25,4 +25,4 @@ if __name__=="__main__":
         alpha=0.7,
         color="blue",
     )
-    plt.show()
+    plt.savefig("./examples/out_python.png")

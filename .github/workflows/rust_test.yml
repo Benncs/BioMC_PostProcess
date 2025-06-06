@@ -1,10 +1,11 @@
 name: rust_test
 
 on:
+  workflow_call: {} 
   push:
     branches:
       - main
-      - test_ci
+      - "0.5"
     tags:
       - '*'
   pull_request:
