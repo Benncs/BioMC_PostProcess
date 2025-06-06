@@ -1,4 +1,5 @@
-use bcore::{ConcatPostPrcess,PostProcessReader};
+use bcore::api::PostProcessPopulation;
+use bcore::{ConcatPostPrcess,PostProcessReader, PostProcessReaderInfo};
 use ndarray::s;
 use plotly::ImageFormat;
 use plotly::{Layout, Plot, Scatter};
@@ -13,7 +14,7 @@ fn main() {
     "uptake_27",
     "uptake_28",
     "uptake_29"],
-        Some("/home/benjamin/Documents/code/cpp/BioCMA-MCST/results/".to_string()),
+        Some("BioCMA-MCST/results/".to_string()),
     ) {
         println!("{:?}",obj.get_property_names());
         let x = obj.get_biomass_concentration().unwrap();

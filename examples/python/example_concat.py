@@ -1,7 +1,7 @@
 import biomc_pp
 from biomc_pp.figures import plot_biomass_concentration
 
-root = "/home/benjamin/Documents/code/cpp/BioCMA-MCST/results/"
+root = "Documents/code/cpp/BioCMA-MCST/results/"
 
 names = [
     "uptake",

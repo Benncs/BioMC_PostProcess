@@ -1,12 +1,10 @@
-use crate::api::{ModelEstimator, PostProcessReader};
+use crate::api::{ModelEstimator, PostProcessPopulation, PostProcessReader, PostProcessReaderInfo};
 use crate::datamodel::{f_get_probes, make_histogram, read_spatial_model_properties, Results};
 use crate::datamodel::{
     get_n_export_real, read_avg_model_properties, read_model_mass, read_model_properties,
     tallies::Tallies, vec_to_array_view2, vec_to_array_view3, Dim, Weight,
 };
-use crate::process::{
-    spatial_average_concentration, variance_concentration, Histogram,
-};
+use crate::process::{spatial_average_concentration, variance_concentration, Histogram};
 use crate::{api::Estimator, api::Phase, error::ApiError};
 use ndarray::{s, Array1, Array2, ArrayView2, ArrayView3, Axis};
 
@@ -37,7 +35,120 @@ impl PostProcess {
     }
 }
 
-impl PostProcessReader for PostProcess {
+impl crate::api::PostProcessPopulation for PostProcess {
+    fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, ApiError> {
+        // Check if the index is out of range
+        if i_export >= self.results.main.records.time.len() {
+            return Err(ApiError::OutOfRange(
+                i_export,
+                self.results.main.records.time.len(),
+            ));
+        }
+        if !self.results.property_name.iter().any(|x| x == key) {
+            return Err(ApiError::KeyError(key.to_string()));
+        }
+
+        match read_model_properties(key, self.results.get_files(), i_export) {
+            Ok(res) => res
+                .mean()
+                .ok_or(ApiError::Default("get_population_mean".to_string())),
+            Err(e) => Err(ApiError::Io(e)),
+        }
+    }
+
+    //Actually compute spatial average property cannot be use to follow distribution
+    fn get_spatial_average_property(&self, key: &str) -> Result<Array2<f64>, ApiError> {
+        let nt: usize = self.results.main.records.time.len(); // Number of time steps
+        let num_dimensions = self.results.main.records.dim.0; // Dimensionality
+
+        let mut property_matrix = Array2::zeros((nt, num_dimensions));
+
+        if !self.results.property_name.iter().any(|x| x == key) {
+            return Err(ApiError::KeyError(key.to_string()));
+        }
+
+        read_spatial_model_properties(key, self.results.get_files(), &mut property_matrix, nt)?;
+
+        property_matrix /= self.get_number_particle();
+
+        Ok(property_matrix)
+    }
+
+    /// Calculates the biomass concentration over time for the simulation.
+    ///
+    /// # Returns
+    /// * `Result<Array2<f64>, String>` - A 2D array with biomass concentrations or an error message.
+    fn get_biomass_concentration(&self) -> Result<Array2<f64>, ApiError> {
+        let nt: usize = self.results.main.records.time.len(); // Number of time steps
+        let num_dimensions = self.results.main.records.dim.0; // Dimensionality
+
+        // Initialize the biomass matrix
+        let mut biomass_matrix = Array2::zeros((nt, num_dimensions));
+
+        if !self.results.property_name.iter().any(|x| x == "mass") {
+            return Err(ApiError::KeyError("mass".to_string()));
+        }
+
+        // Attempt to read model mass
+        read_model_mass(self.results.get_files(), &mut biomass_matrix, nt)?;
+
+        // Convert volume to an array view
+        let volume =
+            vec_to_array_view2(&self.results.main.records.volume_liquid, nt, num_dimensions);
+
+        // Calculate biomass concentration
+        biomass_matrix = self.results.main.initial.initial_weight * (biomass_matrix / volume);
+
+        Ok(biomass_matrix)
+    }
+
+    /// Fetches specific properties of the model at a given export index.
+    ///
+    /// # Arguments
+    /// * `key` - The property key to fetch.
+    /// * `i_export` - The index of the export to retrieve.
+    ///
+    /// # Returns
+    /// * `Result<Array1<f64>, String>` - A 1D array of property values or an error message.
+    fn get_properties(&self, key: &str, i_export: usize) -> Result<Array1<f64>, ApiError> {
+        if i_export >= self.results.main.records.time.len() {
+            return Err(ApiError::OutOfRange(
+                i_export,
+                self.results.main.records.time.len(),
+            ));
+        }
+
+        if !self.results.property_name.iter().any(|x| x == key) {
+            return Err(ApiError::KeyError(key.to_string()));
+        }
+
+        match read_model_properties(key, self.results.get_files(), i_export) {
+            Ok(res) => Ok(res),
+            // Err(e) => Err(format!("Failed to read model properties: {:?}", e)),
+            Err(e) => Err(ApiError::Io(e)),
+        }
+    }
+
+    /// Calculates the population mean over time for a given property key.
+    ///
+    /// # Arguments
+    /// * `key` - The property key for which to calculate the mean.
+    ///
+    /// # Returns
+    /// * `Result<Array1<f64>, String>` - A 1D array of mean values over time or an error message.
+    fn get_time_population_mean(&self, key: &str) -> Result<Array1<f64>, ApiError> {
+        if !self.results.property_name.iter().any(|x| x == key) {
+            return Err(ApiError::KeyError(key.to_string()));
+        }
+
+        match read_avg_model_properties(key, self.results.get_files(), self.n_export()) {
+            Ok(res) => Ok(res),
+            Err(e) => Err(ApiError::Io(e)),
+        }
+    }
+}
+
+impl PostProcessReaderInfo for PostProcess {
     fn time(&self) -> &[f64] {
         self.results.main.time()
     }
@@ -46,76 +157,20 @@ impl PostProcessReader for PostProcess {
         &self.results.main.weight
     }
 
-    fn get_property_names(&self) -> Vec<String> {
-        self.results.property_name.clone()
-    }
-
-    fn get_spatial_average_mtr(&self, species: usize) -> Result<Array1<f64>, ApiError> {
-        let r = &self.results.main.records;
-        let nt = r.time.len();
-        let dim = &r.dim;
-
-        if let Some(mtr) = &r.mtr {
-            let mtr = vec_to_array_view3(mtr, dim, nt);
-
-            return match mtr.slice(s![.., .., species]).mean_axis(Axis(1)) {
-                Some(avg) => Ok(avg),
-                None => Err(ApiError::ShapeError),
-            };
-        }
-
-        Err(ApiError::RecordsError("mtr".to_string()))
-
-        // let mtr = vec_to_array_view3(self.results., &dim, nt);
-    }
-
     fn v_liquid(&self) -> ArrayView2<'_, f64> {
         let nt = self.results.main.records.time.len();
         let dim = &self.results.main.records.dim;
         vec_to_array_view2(&self.results.main.records.volume_liquid, nt, dim.0)
     }
 
-    fn get_variance_concentration(
-        &self,
-        species: usize,
-        phase: Phase,
-    ) -> Result<Array1<f64>, ApiError> {
-        // Helper
-        fn process_phase(
-            concentration: &Vec<f64>,
-            volume: &Vec<f64>,
-            nt: usize,
-            dim: &Dim,
-            species: usize,
-        ) -> Array1<f64> {
-            let c: ndarray::ArrayBase<ndarray::ViewRepr<&f64>, ndarray::Dim<[usize; 3]>> =
-                vec_to_array_view3(concentration, dim, nt);
-            let vol = vec_to_array_view2(volume, nt, dim.0);
-            let c_slice = &c.slice(s![.., .., species]);
-            
-            variance_concentration(c_slice, &vol)
-        }
-
-        let records = &self.results.main.records;
-        let nt = records.time.len();
-        let dim = &records.dim;
-
-        match phase {
-            Phase::Gas => {
-                if let (Some(c), Some(v)) = (&records.concentration_gas, &records.volume_gas) {
-                    return Ok(process_phase(c, v, nt, dim, species));
-                }
-
-                panic!("Gas is not present");
-            }
-            Phase::Liquid => Ok(process_phase(
-                &records.concentration_liquid,
-                &records.volume_liquid,
-                nt,
-                dim,
-                species,
-            )),
-        }
+    /// Returns an optional reference to the tallies.
+    ///
+    /// # Returns
+    ///
+    /// * `Some(&Tallies)` - A reference to the tallies if they exist.
+    /// * `None` - If there are no tallies.
+    fn tallies(&self) -> Option<&Tallies> {
+        self.results.main.records.tallies.as_ref()
     }
 
     /// Returns an `ArrayView1<f64>` representing the time data from the simulation results.
@@ -145,6 +200,76 @@ impl PostProcessReader for PostProcess {
         self.results.main.records.time.len()
     }
 
+    fn get_property_names(&self) -> Vec<String> {
+        self.results.property_name.clone()
+    }
+
+    //FIXME
+    fn get_probes(&self) -> Result<Array1<f64>, ApiError> {
+        f_get_probes(&self.results.files)
+    }
+
+    /// Retrieves the 2D array of particle numbers.
+    ///
+    /// # Returns
+    /// * `&Array2<f64>` - Reference to the 2D array containing particle numbers.
+    fn get_number_particle(&self) -> &Array2<f64> {
+        &self.results.total_particle_repetition
+    }
+}
+
+impl PostProcessReader for PostProcess {
+    fn get_variance_concentration(
+        &self,
+        species: usize,
+        phase: Phase,
+    ) -> Result<Array1<f64>, ApiError> {
+        // Helper
+        fn process_phase(
+            concentration: &[f64],
+            volume: &[f64],
+            nt: usize,
+            dim: &Dim,
+            species: usize,
+        ) -> Array1<f64> {
+            let c: ndarray::ArrayBase<ndarray::ViewRepr<&f64>, ndarray::Dim<[usize; 3]>> =
+                vec_to_array_view3(concentration, dim, nt);
+            let vol = vec_to_array_view2(volume, nt, dim.0);
+            let c_slice = &c.slice(s![.., .., species]);
+
+            variance_concentration(c_slice, &vol)
+        }
+
+        let records = &self.results.main.records;
+        let nt = records.time.len();
+        let dim = &records.dim;
+
+        match phase {
+            Phase::Gas => {
+                if let (Some(c), Some(v)) = (&records.concentration_gas, &records.volume_gas) {
+                    return Ok(process_phase(c, v, nt, dim, species));
+                }
+
+                panic!("Gas is not present");
+            }
+            Phase::Liquid => Ok(process_phase(
+                &records.concentration_liquid,
+                &records.volume_liquid,
+                nt,
+                dim,
+                species,
+            )),
+        }
+    }
+
+    /// Calculates the total growth in number
+    ///
+    /// # Returns
+    /// * `Array1<f64>` - 1D array containing the summed growth numbers.
+    fn get_growth_in_number(&self) -> Array1<f64> {
+        self.results.total_particle_repetition.sum_axis(Axis(1))
+    }
+
     fn get_concentrations(&self, phase: Phase) -> ArrayView3<f64> {
         let records = &self.results.main.records;
         let nt = records.time.len();
@@ -165,8 +290,8 @@ impl PostProcessReader for PostProcess {
     fn get_spatial_average_concentration(&self, species: usize, phase: Phase) -> Array1<f64> {
         // Helper
         fn process_phase(
-            concentration: &Vec<f64>,
-            volume: &Vec<f64>,
+            concentration: &[f64],
+            volume: &[f64],
             nt: usize,
             dim: &Dim,
             species: usize,
@@ -244,117 +369,39 @@ impl PostProcessReader for PostProcess {
         }
     }
 
-    //Actually compute spatial average property cannot be use to follow distribution
-    fn get_spatial_average_property(&self, key: &str) -> Result<Array2<f64>, ApiError> {
-        let nt: usize = self.results.main.records.time.len(); // Number of time steps
-        let num_dimensions = self.results.main.records.dim.0; // Dimensionality
+    fn get_mtr(&self, species: usize) -> Result<Array2<f64>, ApiError> {
+        let r = &self.results.main.records;
+        let nt = r.time.len();
+        let dim = &r.dim;
+        if species >= dim.1 {
+            return Err(ApiError::SpeciesError(species));
+        }
+        if let Some(mtr) = &r.mtr {
+            let mtr_array = vec_to_array_view3(mtr, dim, nt);           
 
-        // Initialize the biomass matrix
-        let mut biomass_matrix = Array2::zeros((nt, num_dimensions));
-
-        if !self.results.property_name.iter().any(|x| x == key) {
-            return Err(ApiError::KeyError(key.to_string()));
+            return Ok(mtr_array.slice(s![.., .., species]).to_owned());
         }
 
-        read_spatial_model_properties(key, self.results.get_files(), &mut biomass_matrix, nt)?;
-
-        // Calculate biomass concentration
-        biomass_matrix /= self.get_number_particle();
-
-        Ok(biomass_matrix)
+        Err(ApiError::RecordsError("mtr not found".to_string()))
     }
 
-    fn get_probes(&self) -> Result<Array1<f64>, ApiError> {
-        f_get_probes(&self.results.files)
-    }
-
-    /// Calculates the biomass concentration over time for the simulation.
-    ///
-    /// # Returns
-    /// * `Result<Array2<f64>, String>` - A 2D array with biomass concentrations or an error message.
-    fn get_biomass_concentration(&self) -> Result<Array2<f64>, ApiError> {
-        let nt: usize = self.results.main.records.time.len(); // Number of time steps
-        let num_dimensions = self.results.main.records.dim.0; // Dimensionality
-
-        // Initialize the biomass matrix
-        let mut biomass_matrix = Array2::zeros((nt, num_dimensions));
-
-        if !self.results.property_name.iter().any(|x| x == "mass") {
-            return Err(ApiError::KeyError("mass".to_string()));
+    fn get_spatial_average_mtr(&self, species: usize) -> Result<Array1<f64>, ApiError> {
+        let r = &self.results.main.records;
+        let nt = r.time.len();
+        let dim: &Dim = &r.dim;
+        if species >= dim.1 {
+            return Err(ApiError::SpeciesError(species));
         }
 
-        // Attempt to read model mass
-        read_model_mass(self.results.get_files(), &mut biomass_matrix, nt)?;
+        if let Some(mtr) = &r.mtr {
+            let mtr = vec_to_array_view3(mtr, dim, nt);
 
-        // Convert volume to an array view
-        let volume =
-            vec_to_array_view2(&self.results.main.records.volume_liquid, nt, num_dimensions);
-
-        // Calculate biomass concentration
-        biomass_matrix = self.results.main.initial.initial_weight * (biomass_matrix / volume);
-
-        Ok(biomass_matrix)
-    }
-
-    /// Calculates the total growth in number
-    ///
-    /// # Returns
-    /// * `Array1<f64>` - 1D array containing the summed growth numbers.
-    fn get_growth_in_number(&self) -> Array1<f64> {
-        self.results.total_particle_repetition.sum_axis(Axis(1))
-    }
-
-    /// Retrieves the 2D array of particle numbers.
-    ///
-    /// # Returns
-    /// * `&Array2<f64>` - Reference to the 2D array containing particle numbers.
-    fn get_number_particle(&self) -> &Array2<f64> {
-        &self.results.total_particle_repetition
-    }
-
-    /// Fetches specific properties of the model at a given export index.
-    ///
-    /// # Arguments
-    /// * `key` - The property key to fetch.
-    /// * `i_export` - The index of the export to retrieve.
-    ///
-    /// # Returns
-    /// * `Result<Array1<f64>, String>` - A 1D array of property values or an error message.
-    fn get_properties(&self, key: &str, i_export: usize) -> Result<Array1<f64>, ApiError> {
-        if i_export >= self.results.main.records.time.len() {
-            return Err(ApiError::OutOfRange(
-                i_export,
-                self.results.main.records.time.len(),
-            ));
+            return match mtr.slice(s![.., .., species]).mean_axis(Axis(1)) {
+                Some(avg) => Ok(avg),
+                None => Err(ApiError::ShapeError),
+            };
         }
-
-        if !self.results.property_name.iter().any(|x| x == key) {
-            return Err(ApiError::KeyError(key.to_string()));
-        }
-
-        match read_model_properties(key, self.results.get_files(), i_export) {
-            Ok(res) => Ok(res),
-            // Err(e) => Err(format!("Failed to read model properties: {:?}", e)),
-            Err(e) => Err(ApiError::Io(e)),
-        }
-    }
-
-    /// Calculates the population mean over time for a given property key.
-    ///
-    /// # Arguments
-    /// * `key` - The property key for which to calculate the mean.
-    ///
-    /// # Returns
-    /// * `Result<Array1<f64>, String>` - A 1D array of mean values over time or an error message.
-    fn get_time_population_mean(&self, key: &str) -> Result<Array1<f64>, ApiError> {
-        if !self.results.property_name.iter().any(|x| x == key) {
-            return Err(ApiError::KeyError(key.to_string()));
-        }
-
-        match read_avg_model_properties(key, self.results.get_files(), self.n_export()) {
-            Ok(res) => Ok(res),
-            Err(e) => Err(ApiError::Io(e)),
-        }
+        Err(ApiError::RecordsError("mtr".to_string()))
     }
 
     fn get_histogram_array(
@@ -391,29 +438,6 @@ impl PostProcessReader for PostProcess {
         let b = hist.get_bins().to_vec();
         let c = hist.get_counts().to_vec();
         Ok((b, c))
-    }
-
-    fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, ApiError> {
-        // Check if the index is out of range
-        if i_export >= self.results.main.records.time.len() {
-            return Err(ApiError::OutOfRange(
-                i_export,
-                self.results.main.records.time.len(),
-            ));
-        }
-        if !self.results.property_name.iter().any(|x| x == key) {
-            return Err(ApiError::KeyError(key.to_string()));
-        }
-
-        match read_model_properties(key, self.results.get_files(), i_export) {
-            Ok(res) => res
-                .mean()
-                .ok_or(ApiError::Default("get_population_mean".to_string())),
-            Err(e) => Err(ApiError::Io(e)),
-        }
-    }
-    fn tallies(&self) -> Option<&Tallies> {
-        self.results.main.records.tallies.as_ref()
     }
 }
 

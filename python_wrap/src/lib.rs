@@ -1,6 +1,7 @@
-use bcore::api::ModelEstimator;
+use bcore::api::{ModelEstimator, PostProcessApi, PostProcessPopulation};
+use bcore::error::ApiError;
 use bcore::Weight;
-use bcore::{PostProcess, PostProcessReader};
+use bcore::{PostProcess, PostProcessReader, PostProcessReaderInfo};
 use numpy::PyArray2;
 use numpy::{PyArray1, PyArray3};
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
@@ -24,7 +25,7 @@ use pyo3::prelude::*;
 #[derive(Debug)]
 #[pyclass(name = "PostProcess")]
 struct PythonPostProcess {
-    inner: PostProcess,
+    inner: Box<dyn PostProcessApi>,
 }
 
 /// An enum representing different phases .
@@ -38,6 +39,21 @@ struct PythonPostProcess {
 pub enum Phase {
     Liquid,
     Gas,
+}
+
+#[derive(Debug)]
+pub struct PythonError(ApiError);
+
+impl From<PythonError> for PyErr {
+    fn from(error: PythonError) -> Self {
+        PyValueError::new_err(error.0.to_string())
+    }
+}
+
+impl From<ApiError> for PythonError {
+    fn from(other: ApiError) -> Self {
+        Self(other)
+    }
 }
 
 impl From<Phase> for bcore::api::Phase {
@@ -119,17 +135,8 @@ impl PythonPostProcess {
     #[new]
     #[pyo3(signature = (folder, root=None))]
     fn new(folder: &str, root: Option<String>) -> PyResult<Self> {
-        // if let Ok(pp) = PostProcess::new(folder, root) {
-        //     return Ok(Self { inner: pp });
-        // }
-
-        match PostProcess::new(folder, root) {
-            Ok(pp) => Ok(Self { inner: pp }),
-            Err(err) => {
-                println!("{:?}", err);
-                Err(PyValueError::new_err("Error creating object"))
-            }
-        }
+        let pp = PostProcess::new(folder, root).map_err(PythonError::from)?;
+        Ok(Self{inner:Box::new(pp)})
     }
 
     fn get_property_names(&self) -> PyResult<Vec<String>> {
@@ -137,8 +144,7 @@ impl PythonPostProcess {
     }
 
     #[getter]
-    fn v_liquid(&self, py: Python<'_>)-> Py<PyArray2<f64>>
-    {
+    fn v_liquid(&self, py: Python<'_>) -> Py<PyArray2<f64>> {
         let e = self.inner.v_liquid().to_owned();
         PyArray2::from_owned_array(py, e).unbind()
     }
@@ -221,11 +227,16 @@ impl PythonPostProcess {
         }
     }
 
-    fn get_spatial_average_mtr(&self, py: Python<'_>, species: usize) -> Py<PyArray1<f64>> {
-        match self.inner.get_spatial_average_mtr(species) {
-            Ok(e) => PyArray1::from_owned_array(py, e).unbind(),
-            Err(e) => panic!("{}", e),
-        }
+    fn get_spatial_average_mtr(
+        &self,
+        py: Python<'_>,
+        species: usize,
+    ) -> PyResult<Py<PyArray1<f64>>> {
+        let e = self
+            .inner
+            .get_spatial_average_mtr(species)
+            .map_err(PythonError::from)?;
+        Ok(PyArray1::from_owned_array(py, e).unbind())
     }
 
     fn get_concentrations(&self, py: Python<'_>, phase: Phase) -> Py<PyArray3<f64>> {
@@ -250,19 +261,23 @@ impl PythonPostProcess {
         panic!("")
     }
 
-    fn get_spatial_property(&self, py: Python<'_>, name: &str) -> Py<PyArray2<f64>> {
+    fn get_spatial_property(&self, py: Python<'_>, name: &str) -> PyResult<Py<PyArray2<f64>>> {
         // TODO
-        match self.inner.get_spatial_average_property(name) {
-            Ok(e) => PyArray2::from_owned_array(py, e).unbind(),
-            Err(e) => panic!("{}", e),
-        }
+
+        let e = self
+            .inner
+            .get_spatial_average_property(name)
+            .map_err(PythonError::from)?;
+
+        Ok(PyArray2::from_owned_array(py, e).unbind())
     }
 
-    fn get_biomass_concentration(&self, py: Python<'_>) -> Py<PyArray2<f64>> {
-        match self.inner.get_biomass_concentration() {
-            Ok(e) => PyArray2::from_owned_array(py, e).unbind(),
-            Err(e) => panic!("{}", e),
-        }
+    fn get_biomass_concentration(&self, py: Python<'_>) -> PyResult<Py<PyArray2<f64>>> {
+        let e = self
+            .inner
+            .get_biomass_concentration()
+            .map_err(PythonError::from)?;
+        Ok(PyArray2::from_owned_array(py, e).unbind())
     }
 
     fn get_growth_in_number(&self, py: Python<'_>) -> Py<PyArray1<f64>> {
@@ -277,11 +292,10 @@ impl PythonPostProcess {
         PyArray2::from_owned_array(py, e).unbind()
     }
 
-    fn get_probes(&self, py: Python<'_>) -> Py<PyArray1<f64>> {
-        match self.inner.get_probes() {
-            Ok(e) => PyArray1::from_owned_array(py, e).unbind(),
-            Err(e) => panic!("{}", e),
-        }
+    fn get_probes(&self, py: Python<'_>) -> PyResult<Py<PyArray1<f64>>> {
+        let e = self.inner.get_probes().map_err(PythonError::from)?;
+
+        Ok(PyArray1::from_owned_array(py, e).unbind())
     }
 
     fn get_properties(&self, py: Python<'_>, key: &str, i_export: usize) -> Py<PyArray1<f64>> {
@@ -291,11 +305,10 @@ impl PythonPostProcess {
     }
 
     fn get_population_mean(&self, key: &str, i_export: usize) -> PyResult<f64> {
-        if let Ok(o) = self.inner.get_population_mean(key, i_export) {
-            Ok(o)
-        } else {
-            Err(PyValueError::new_err("Error get_population_mean"))
-        }
+        Ok(self
+            .inner
+            .get_population_mean(key, i_export)
+            .map_err(PythonError::from)?)
     }
 
     fn get_time_population_mean(&self, py: Python<'_>, key: &str) -> Py<PyArray1<f64>> {
@@ -325,27 +338,25 @@ impl PythonPostProcess {
     }
 
     pub fn mu_direct(&self, py: Python<'_>) -> PyResult<Py<PyArray1<f64>>> {
-        match self.inner.mu_direct() {
-            Ok(e) => Ok(PyArray1::from_owned_array(py, e).unbind()),
-            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e.to_string())),
-        }
+        let e = self.inner.mu_direct().map_err(PythonError::from)?;
+
+        Ok(PyArray1::from_owned_array(py, e).unbind())
     }
 
     pub fn estimate(&self, etype: Estimator, key: &str, i_export: usize) -> PyResult<f64> {
-        match self.inner.estimate(etype.into(), key, i_export) {
-            Ok(e) => Ok(e),
-            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e.to_string())),
-        }
+        Ok(self.inner.estimate(etype.into(), key, i_export).map_err(PythonError::from)?)
     }
 
     fn get_spatial_average_biomass_concentration(
         &self,
         py: Python<'_>,
     ) -> PyResult<Py<PyArray1<f64>>> {
-        match self.inner.get_spatial_average_biomass_concentration() {
-            Ok(e) => Ok(PyArray1::from_owned_array(py, e).unbind()),
-            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e.to_string())),
-        }
+        let e = self
+            .inner
+            .get_spatial_average_biomass_concentration()
+            .map_err(PythonError::from)?;
+
+        Ok(PyArray1::from_owned_array(py, e).unbind())
     }
 
     pub fn estimate_time(
@@ -354,13 +365,12 @@ impl PythonPostProcess {
         etype: Estimator,
         key: &str,
     ) -> PyResult<Py<PyArray1<f64>>> {
-        match self.inner.estimate_time(etype.into(), key) {
-            Ok(e) => Ok(PyArray1::from_owned_array(py, e).unbind()),
-            Err(e) => Err(PyErr::new::<PyRuntimeError, _>(e.to_string())),
-        }
+
+        let e = self.inner.estimate_time(etype.into(), key).map_err(PythonError::from)?;
+        Ok(PyArray1::from_owned_array(py, e).unbind())
     }
 
-    pub fn get_csv_tallies(&self, py: Python<'_>) -> PyResult<String> {
+    pub fn get_csv_tallies(&self, _py: Python<'_>) -> PyResult<String> {
         match self.inner.tallies() {
             Some(e) => Ok(e.to_csv().unwrap()),
             None => Err(PyErr::new::<PyRuntimeError, _>("No data")),

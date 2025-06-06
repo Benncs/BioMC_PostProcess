@@ -1,4 +1,4 @@
-use crate::api::PostProcessReader;
+use crate::api::{PostProcessReader, PostProcessReaderInfo};
 use crate::datamodel::{Weight,tallies::Tallies};
 
 use crate::{api::Phase, error::ApiError, PostProcess};
@@ -42,51 +42,77 @@ impl ConcatPostPrcess {
     }
 }
 
-impl PostProcessReader for ConcatPostPrcess {
+impl crate::api::PostProcessPopulation for ConcatPostPrcess {
+
+    fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, ApiError> {
+        todo!()
+    }
+    fn get_biomass_concentration(&self) -> Result<Array2<f64>, ApiError> {
+        let mut concatenated = Array2::<f64>::default((0, 0));
+        let mut init = false;
+        for postprocess in &self.dataset {
+            match postprocess.get_biomass_concentration() {
+                Ok(data) => {
+                    if !init {
+                        concatenated = data;
+                        init = true;
+                    } else if let Err(err) = concatenated.append(Axis(0), data.view()) {
+                        return Err(ApiError::Default(err.to_string()));
+                    }
+                }
+
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(concatenated)
+    }
+
+   
+    fn get_spatial_average_property(&self, key:&str) ->  Result<Array2<f64>, ApiError>
+    {
+        todo!()
+    }
+
+   
+    fn get_properties(&self, key: &str, i_export: usize) -> Result<Array1<f64>, ApiError> {
+        todo!()
+    }
+
+    fn get_time_population_mean(&self, key: &str) -> Result<Array1<f64>, ApiError> {
+        todo!()
+    }
+
+}
+
+impl PostProcessReaderInfo for ConcatPostPrcess
+{
     fn time(&self) -> &[f64] {
         todo!()
     }
+
+    fn get_property_names(&self) -> Vec<String> {
+        self.dataset[0].get_property_names() //Names SHOULD be the same
+    }
+
 
     fn v_liquid(&self) -> ArrayView2<'_, f64>
     {
         todo!()
     }
 
-    fn get_spatial_average_property(&self, key:&str) ->  Result<Array2<f64>, ApiError>
-    {
+    fn weight(&self) -> &Weight {
+        //FIXME
+        self.dataset[0].weight()
+    }
+
+    fn tallies(&self) -> Option<&Tallies> {
         todo!()
     }
 
-    fn get_concentrations(&self, phase: Phase) -> ArrayView3<f64> {
+    fn get_number_particle(&self) -> &Array2<f64> {
         todo!()
     }
 
-    fn get_variance_concentration(&self,species:usize,phase:Phase)-> Result<Array1<f64>, ApiError>
-    {
-        todo!()
-    }
-
-    fn get_spatial_average_biomass_concentration(&self) -> Result<Array1<f64>, ApiError> {
-        let mut concatenated = Array1::<f64>::default(0);
-        for postprocess in &self.dataset {
-            match postprocess.get_spatial_average_biomass_concentration() {
-                Ok(data) => concatenated.append(Axis(0), data.view()).unwrap(),
-                Err(e) => {
-                    return Err(e);
-                }
-            }
-        }
-        Ok(concatenated)
-    }
-
-    fn get_probes(&self) -> Result<Array1<f64>, ApiError>
-    {
-        todo!();
-    }
-
-    fn get_property_names(&self) -> Vec<String> {
-        self.dataset[0].get_property_names() //Names SHOULD be the same
-    }
 
     /// Concatenates the time arrays from all datasets into a single array view.
     ///
@@ -114,6 +140,49 @@ impl PostProcessReader for ConcatPostPrcess {
             .map(|postprocess| postprocess.n_export())
             .sum()
     }
+
+    fn get_probes(&self) -> Result<Array1<f64>, ApiError>
+    {
+        todo!();
+    }
+}
+
+
+
+impl PostProcessReader for ConcatPostPrcess {
+    
+    fn get_mtr(&self, species: usize) -> Result<Array2<f64>, ApiError>
+    {
+        todo!();
+    }
+  
+
+    fn get_concentrations(&self, phase: Phase) -> ArrayView3<f64> {
+        todo!()
+    }
+
+    fn get_variance_concentration(&self,species:usize,phase:Phase)-> Result<Array1<f64>, ApiError>
+    {
+        todo!()
+    }
+
+    fn get_spatial_average_biomass_concentration(&self) -> Result<Array1<f64>, ApiError> {
+        let mut concatenated = Array1::<f64>::default(0);
+        for postprocess in &self.dataset {
+            match postprocess.get_spatial_average_biomass_concentration() {
+                Ok(data) => concatenated.append(Axis(0), data.view()).unwrap(),
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+        Ok(concatenated)
+    }
+
+
+
+    
+    
 
     fn get_spatial_average_concentration(&self, species: usize, phase: Phase) -> Array1<f64> {
         let mut concatenated = Array1::<f64>::default(0);
@@ -155,47 +224,12 @@ impl PostProcessReader for ConcatPostPrcess {
         Ok(concatenated)
     }
 
-    fn get_biomass_concentration(&self) -> Result<Array2<f64>, ApiError> {
-        let mut concatenated = Array2::<f64>::default((0, 0));
-        let mut init = false;
-        for postprocess in &self.dataset {
-            match postprocess.get_biomass_concentration() {
-                Ok(data) => {
-                    if !init {
-                        concatenated = data;
-                        init = true;
-                    } else if let Err(err) = concatenated.append(Axis(0), data.view()) {
-                        return Err(ApiError::Default(err.to_string()));
-                    }
-                }
-
-                Err(e) => return Err(e),
-            }
-        }
-        Ok(concatenated)
-    }
-
     fn get_growth_in_number(&self) -> Array1<f64> {
         todo!()
     }
 
-    fn weight(&self) -> &Weight {
-        //FIXME
-        self.dataset[0].weight()
-    }
 
-    fn get_number_particle(&self) -> &Array2<f64> {
-        todo!()
-    }
-
-    fn get_properties(&self, key: &str, i_export: usize) -> Result<Array1<f64>, ApiError> {
-        todo!()
-    }
-
-    fn get_time_population_mean(&self, key: &str) -> Result<Array1<f64>, ApiError> {
-        todo!()
-    }
-
+  
     fn get_histogram_array(
         &self,
         n_bins: usize,
@@ -214,10 +248,6 @@ impl PostProcessReader for ConcatPostPrcess {
         todo!()
     }
 
-    fn get_population_mean(&self, key: &str, i_export: usize) -> Result<f64, ApiError> {
-        todo!()
-    }
-    fn tallies(&self) -> Option<&Tallies> {
-        todo!()
-    }
+    
+    
 }

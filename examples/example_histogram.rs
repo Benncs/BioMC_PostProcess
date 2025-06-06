@@ -1,20 +1,21 @@
-use bcore::{PostProcess,PostProcessReader};
+use bcore::api::PostProcessPopulation;
+use bcore::{PostProcess,PostProcessReader,PostProcessReaderInfo};
 use plotly::ImageFormat;
 use plotly::{Bar, Layout, Plot};
 
 fn main() {
     if let Ok(obj) = PostProcess::new(
-        "dilution_2",
+        "example0d",
         Some(
-            "/home-local/casale/Documents/thesis/simulations/ecoli_model_2024/out/dilution/"
+            "./examples/"
                 .to_string(),
         ),
     ) {
         // Generate histogram data for "nu_eff"
         let (nu_eff_bins, nu_eff_counts) = obj
-            .get_histogram(100, obj.n_export() - 1, "nu_eff")
+            .get_histogram(100, obj.n_export() - 1, "nu_eff_2")
             .unwrap();
-        let nu_eff_bin_converted: Vec<f64> = nu_eff_bins.iter().map(|x| x * 3600.0).collect();
+        let nu_eff_bin_converted: Vec<f64> = nu_eff_bins.iter().map(|x| *x ).collect();
 
         // Create bar trace for "nu_eff"
         let nu_eff_bar = Bar::new(nu_eff_bin_converted.clone(), nu_eff_counts)
@@ -23,16 +24,16 @@ fn main() {
 
         // Generate histogram data for "nu_meta"
         let (nu_meta_bins, nu_meta_counts) = obj
-            .get_histogram(100, obj.n_export() - 1, "nu_meta")
+            .get_histogram(100, obj.n_export() - 1, "nu2")
             .unwrap();
-        let nu_meta_bin_converted: Vec<f64> = nu_meta_bins.iter().map(|x| x * 3600.0).collect();
+        let nu_meta_bin_converted: Vec<f64> = nu_meta_bins.iter().map(|x| *x ).collect();
 
         // Create bar trace for "nu_meta"
         let nu_meta_bar = Bar::new(nu_meta_bin_converted.clone(), nu_meta_counts)
             .name("Frequency (nu_meta)")
             .marker(plotly::common::Marker::new().color("black"));
 
-        let mean_nu_meta = obj.get_population_mean("nu_eff", obj.n_export()-1).unwrap()*3600.;
+        let mean_nu_meta = obj.get_population_mean("nu_eff_2", obj.n_export()-1).unwrap();
    
 
     

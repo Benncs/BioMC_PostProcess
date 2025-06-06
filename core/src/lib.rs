@@ -6,6 +6,7 @@ mod impl_unique;
 mod process;
 
 pub use api::PostProcessReader;
+pub use api::PostProcessReaderInfo;
 pub use datamodel::Weight;
 pub use impl_concat::ConcatPostPrcess;
 pub use impl_unique::PostProcess;

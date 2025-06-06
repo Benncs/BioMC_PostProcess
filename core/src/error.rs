@@ -7,11 +7,17 @@ pub enum ApiError {
     #[error("Property {0} does not exist in the selected dataset")]
     KeyError(String),
 
+    #[error("Species {0} does not exist in the selected dataset")]
+    SpeciesError(usize),
+
     #[error("Records quantity '{0}' does not exist in the selected dataset")]
     RecordsError(String),
 
     #[error("Datasetd shape mismatch")]
     ShapeError,
+
+    #[error("Unsuported dataset version")]
+    VersionError,
 
     #[error("Internal I/O error: {0}")]
     Io(#[from] hdf5::Error),

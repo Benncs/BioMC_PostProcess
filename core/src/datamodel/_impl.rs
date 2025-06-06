@@ -8,6 +8,8 @@ use hdf5::Group;
 use ndarray::{s, Array1, Array2, ArrayView1};
 use std::collections::HashMap;
 
+const SUPPORTED_VERSION:usize = 6;
+
 macro_rules! read_scalar {
     // Match the types f64, usize, or u64 and provide the correct default behavior
     ($group:expr, $name:expr, f64) => {
@@ -33,6 +35,21 @@ macro_rules! read_vec {
         $group.dataset($name)?.read_raw::<u64>()?
     };
 }
+
+use hdf5::File;
+
+pub fn check_version(filename: &str) -> hdf5::Result<bool> {
+    let file = File::open_as(filename, hdf5::file::OpenMode::Read)?;
+
+    if file.attr_names()?.iter().any(|x| x == "file_version") {
+        let attr = file.attr("file_version")?;
+        let version: usize = attr.read_scalar()?;
+        return Ok(SUPPORTED_VERSION==version);
+    }
+
+    Ok(false)
+}
+
 
 impl ResultGroup<Misc> for hdf5::Group {
     fn read_g(&self) -> hdf5::Result<Misc> {
@@ -61,6 +78,8 @@ pub fn read_number_particle(filename: &str) -> hdf5::Result<Vec<f64>> {
     let v = read_vec!(rec, "number_particle", f64);
     Ok(v)
 }
+
+
 
 pub fn read_spatial_model_properties(
     key: &str,

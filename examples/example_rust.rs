@@ -1,12 +1,13 @@
-use bcore::{PostProcess, PostProcessReader};
+use bcore::api::PostProcessPopulation;
+use bcore::{PostProcess, PostProcessReader, PostProcessReaderInfo};
 use ndarray::s;
 use plotly::ImageFormat;
 use plotly::{Layout, Plot, Scatter};
 fn main() {
-    if let Ok(obj) = PostProcess::new(
-        "str_1",
-        Some("/home-local/casale/Documents/thesis/simulations/meta/out_str_nu_redis_2".to_string()),
-    ) {
+    let obj = PostProcess::new(
+        "example0d",
+        Some("./examples/".to_string())).unwrap();
+   
         let x = obj.get_biomass_concentration().unwrap();
         let time: Vec<f64> = obj.time().iter().map(|t| t / 3600.).collect();
         let xvec = x.slice(s![.., 0]).to_vec();
@@ -26,8 +27,8 @@ fn main() {
 
         plot.set_layout(layout);
 
-        plot.write_image("./examples/out.svg", ImageFormat::SVG, 800, 600, 1.0);
-        plot.write_html("./examples/out.html");
+        plot.write_image("./examples/out_rust.svg", ImageFormat::SVG, 800, 600, 1.0);
+        plot.write_html("./examples/out_rust.html");
 
         println!("{}", plot.to_inline_html(Some("div_plot_x")));
 
@@ -35,7 +36,5 @@ fn main() {
             "{}",
             obj.tallies().expect("REASON").to_csv().expect("REASE")
         );
-    } else {
-        println!("Simulation not found");
-    }
+     
 }

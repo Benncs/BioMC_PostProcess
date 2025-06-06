@@ -43,7 +43,16 @@ impl Results {
                 let nt = main.records.time.len();
                 let shape = (nt, main.records.dim.0);
                 let mut total_particle_repetition: Array2<f64> = Array2::zeros(shape);
+
+
+
+
+
                 for i_f in &files {
+                    if !_impl::check_version(i_f)?
+                    {
+                        return Err(ApiError::VersionError);
+                    }
                     let n_p = _impl::read_number_particle(i_f)?;
                     total_particle_repetition =
                         total_particle_repetition + Array2::from_shape_vec(shape, n_p).unwrap();
