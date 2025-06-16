@@ -5,7 +5,7 @@ use plotly::ImageFormat;
 use plotly::{Layout, Plot, Scatter};
 fn main() {
     let r_obj = PostProcess::new(
-        "exampled",
+        "example0d",
         Some("./examples/".to_string()));
 
         if r_obj.is_err()

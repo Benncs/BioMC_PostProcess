@@ -76,3 +76,4 @@ docs/_build/
 *.htmlcov
 *.svg
 *.png
+examples/**/*.html
