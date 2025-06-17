@@ -1,5 +1,5 @@
 [package]
-name = "bcore"
+name = "biomc_pp_core"
 description = "Core"
 edition.workspace = true
 license.workspace = true
@@ -28,5 +28,5 @@ static_hdf5 = ["dep:hdf5-sys"]
 
 
 [lib]
-name = "bcore"
+name = "biomc_pp_core"
 path = "src/lib.rs"

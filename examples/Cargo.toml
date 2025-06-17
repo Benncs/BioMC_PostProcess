@@ -6,7 +6,7 @@ version.workspace = true
 authors.workspace = true
 
 [dependencies]
-bcore = { path = "../core" }
+biomc_pp_core = { path = "../core" }
 plotly = { version = "0.12", features = ["kaleido", "kaleido_download","plotly_ndarray"] }
 ndarray = "0.16.1"
 

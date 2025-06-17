@@ -1,5 +1,5 @@
-use bcore::api::PostProcessPopulation;
-use bcore::{ConcatPostPrcess,PostProcessReader, PostProcessReaderInfo};
+use biomc_pp_core::api::PostProcessPopulation;
+use biomc_pp_core::{ConcatPostPrcess,PostProcessReader, PostProcessReaderInfo};
 use ndarray::s;
 use plotly::ImageFormat;
 use plotly::{Layout, Plot, Scatter};

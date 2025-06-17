@@ -38,3 +38,4 @@ locked = false
 config = []
 unstable-flags = []
 rustc-args = []
+cargo-extra-args = "--features extension-module"

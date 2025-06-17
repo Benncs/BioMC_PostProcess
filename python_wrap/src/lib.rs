@@ -1,11 +1,15 @@
-use bcore::api::{ModelEstimator, PostProcessApi, PostProcessPopulation};
-use bcore::error::ApiError;
-use bcore::Weight;
-use bcore::{PostProcess, PostProcessReader, PostProcessReaderInfo};
+use biomc_pp_core::api::{ModelEstimator, PostProcessApi, PostProcessPopulation};
+use biomc_pp_core::error::ApiError;
+use biomc_pp_core::Weight;
+use biomc_pp_core::{PostProcess, PostProcessReader, PostProcessReaderInfo};
 use numpy::PyArray2;
 use numpy::{PyArray1, PyArray3};
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
+
+#[cfg(feature = "embed")]
+pub mod embed;
+
 /// A struct that wraps the `PostProcess` type for Python bindings.
 ///
 /// The `PythonPostProcess` struct is designed to provide a Python interface for the
@@ -36,13 +40,13 @@ struct PythonPostProcess {
 /// ```
 #[derive(Clone, PartialEq)]
 #[pyclass(eq, eq_int)]
-pub enum Phase {
+enum Phase {
     Liquid,
     Gas,
 }
 
 #[derive(Debug)]
-pub struct PythonError(ApiError);
+struct PythonError(ApiError);
 
 impl From<PythonError> for PyErr {
     fn from(error: PythonError) -> Self {
@@ -56,20 +60,20 @@ impl From<ApiError> for PythonError {
     }
 }
 
-impl From<Phase> for bcore::api::Phase {
+impl From<Phase> for biomc_pp_core::api::Phase {
     fn from(val: Phase) -> Self {
         match val {
-            Phase::Liquid => bcore::api::Phase::Liquid,
-            Phase::Gas => bcore::api::Phase::Gas,
+            Phase::Liquid => biomc_pp_core::api::Phase::Liquid,
+            Phase::Gas => biomc_pp_core::api::Phase::Gas,
         }
     }
 }
 
-impl From<bcore::api::Phase> for Phase {
-    fn from(phase: bcore::api::Phase) -> Self {
+impl From<biomc_pp_core::api::Phase> for Phase {
+    fn from(phase: biomc_pp_core::api::Phase) -> Self {
         match phase {
-            bcore::api::Phase::Liquid => Phase::Liquid,
-            bcore::api::Phase::Gas => Phase::Gas,
+            biomc_pp_core::api::Phase::Liquid => Phase::Liquid,
+            biomc_pp_core::api::Phase::Gas => Phase::Gas,
         }
     }
 }
@@ -87,20 +91,20 @@ pub enum Estimator {
     Weighted,
 }
 
-impl From<Estimator> for bcore::api::Estimator {
+impl From<Estimator> for biomc_pp_core::api::Estimator {
     fn from(val: Estimator) -> Self {
         match val {
-            Estimator::MonteCarlo => bcore::api::Estimator::MonteCarlo,
-            Estimator::Weighted => bcore::api::Estimator::Weighted,
+            Estimator::MonteCarlo => biomc_pp_core::api::Estimator::MonteCarlo,
+            Estimator::Weighted => biomc_pp_core::api::Estimator::Weighted,
         }
     }
 }
 
-impl From<bcore::api::Estimator> for Estimator {
-    fn from(phase: bcore::api::Estimator) -> Self {
+impl From<biomc_pp_core::api::Estimator> for Estimator {
+    fn from(phase: biomc_pp_core::api::Estimator) -> Self {
         match phase {
-            bcore::api::Estimator::MonteCarlo => Estimator::MonteCarlo,
-            bcore::api::Estimator::Weighted => Estimator::Weighted,
+            biomc_pp_core::api::Estimator::MonteCarlo => Estimator::MonteCarlo,
+            biomc_pp_core::api::Estimator::Weighted => Estimator::Weighted,
         }
     }
 }
@@ -388,12 +392,24 @@ impl PythonPostProcess {
     }
 }
 
-#[pymodule]
-mod biomc_pp {
-    #[pymodule_export]
-    use super::Estimator;
-    #[pymodule_export]
-    use super::Phase;
-    #[pymodule_export]
-    use super::PythonPostProcess;
+// #[pymodule]
+// mod biomc_pp {
+//     #[pymodule_export]
+//     use super::Estimator;
+//     #[pymodule_export]
+//     use super::Phase;
+//     #[pymodule_export]
+//     use super::PythonPostProcess;
+
+// }
+
+
+#[pymodule(name = "biomc_pp")]
+fn my_extension(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<Estimator>()?;
+    m.add_class::<Phase>()?;
+    m.add_class::<PythonPostProcess>()?;
+    Ok(())
 }
+
+

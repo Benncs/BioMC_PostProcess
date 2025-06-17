@@ -1,5 +1,5 @@
 [package]
-name = "python_wrap"
+name = "biomc_pp"
 description = "Python bindings"
 edition.workspace = true
 license.workspace = true
@@ -15,12 +15,16 @@ publish = true
 bindings = "pyo3"
 
 [dependencies]
-bcore = { path = "../core" }
-numpy = "0.24.0"
-pyo3 = { version = "0.24.2", features = ["extension-module"] }
+biomc_pp_core = { path = "../core" }
+numpy = "0.25.0"
+pyo3 = { version = "0.25.1" }
 
 
 [lib]
 name = "biomc_pp"
 path = "src/lib.rs"
-crate-type = ["cdylib"]
+crate-type = ["cdylib","rlib"]
+
+
+[features]
+embed = ["pyo3/auto-initialize"]
