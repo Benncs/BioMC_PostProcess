@@ -392,24 +392,24 @@ impl PythonPostProcess {
     }
 }
 
-// #[pymodule]
-// mod biomc_pp {
-//     #[pymodule_export]
-//     use super::Estimator;
-//     #[pymodule_export]
-//     use super::Phase;
-//     #[pymodule_export]
-//     use super::PythonPostProcess;
+#[pymodule]
+mod biomc_pp {
+    #[pymodule_export]
+    use super::Estimator;
+    #[pymodule_export]
+    use super::Phase;
+    #[pymodule_export]
+    use super::PythonPostProcess;
 
-// }
-
-
-#[pymodule(name = "biomc_pp")]
-fn my_extension(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<Estimator>()?;
-    m.add_class::<Phase>()?;
-    m.add_class::<PythonPostProcess>()?;
-    Ok(())
 }
+
+
+// #[pymodule(name = "biomc_pp")]
+// fn my_extension(m: &Bound<'_, PyModule>) -> PyResult<()> {
+//     m.add_class::<Estimator>()?;
+//     m.add_class::<Phase>()?;
+//     m.add_class::<PythonPostProcess>()?;
+//     Ok(())
+// }
 
 
