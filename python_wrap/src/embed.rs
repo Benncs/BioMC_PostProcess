@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use std::sync::Once;
 use std::ffi::CString;
 use std::fs;
 use super::biomc_pp as embed_biomc_pp;
@@ -34,9 +35,29 @@ use pyo3::ffi::c_str;
 
 // }
 
+
+#[pyclass]
+struct LoggingStdout;
+
+#[pymethods]
+impl LoggingStdout {
+    fn write(&self, data: &str) -> PyResult<()> {
+        println!("stdout from python: {:?}", data);
+        Ok(())
+    }
+}
+static INIT_PYTHON: Once = Once::new();
+
 pub fn run_embed(script_path: &str, name: &str, root: &str) -> Result<(), String> {
-    pyo3::append_to_inittab!(embed_biomc_pp);
+    
+    INIT_PYTHON.call_once(|| {
+        // This must be done before Python is initialized
+        pyo3::append_to_inittab!(embed_biomc_pp);
+    });
+
+    //pyo3::append_to_inittab!(embed_biomc_pp);
     let r = Python::with_gil(|py| -> PyResult<()> {
+        
         let raw_script = fs::read_to_string(script_path)?;
 
         let complete_script = format!(
@@ -52,6 +73,13 @@ if __name__ == "__main__":
         );
 
         let script = CString::new(complete_script)?;
+
+
+        let logging_stdout = Py::new(py, LoggingStdout)?;
+        let logging_sterr = Py::new(py, LoggingStdout)?;
+        let sys = py.import("sys")?;
+        sys.setattr("stdout", logging_stdout)?;
+        sys.setattr("stderr", logging_sterr)?;
 
         Python::run(py, &script, None, None)?;
 
