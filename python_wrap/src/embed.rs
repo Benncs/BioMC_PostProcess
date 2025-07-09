@@ -42,7 +42,7 @@ struct LoggingStdout;
 #[pymethods]
 impl LoggingStdout {
     fn write(&self, data: &str) -> PyResult<()> {
-        println!("stdout from python: {:?}", data);
+        println!("stdout from python: {}", data);
         Ok(())
     }
 }
